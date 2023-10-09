@@ -23,10 +23,16 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getCategory')
             ),
         ));
-        register_rest_route($this->nameSpace, 'post/(?P<post_slug>[a-zA-Z0-9-_]+)', array(
+        register_rest_route($this->nameSpace, 'post', array(
             array(
                 'methods' => 'GET',
                 'callback' => array($this, 'getPost')
+            ),
+        ));
+        register_rest_route($this->nameSpace, 'post/(?P<post_slug>[a-zA-Z0-9-_]+)', array(
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'getPostDetail')
             ),
         ));
         register_rest_route($this->nameSpace, 'search', array(
@@ -87,7 +93,44 @@ class PostController extends WP_REST_Controller
         $args = array(
             'post_type' => POST_TYPE,
             'post_status' => array('publish'),
-            'name' => $request['post_slug']
+        );
+        $posts = new WP_Query($args);
+      
+        
+        if ($posts->have_posts()) {
+            $results['code'] = 'success';
+            while ($posts->have_posts()) {
+                $posts->the_post();
+                $getTitle =  get_the_title();
+               
+                
+                //Get content without caption
+                $results['data'][]= [
+                    'title' => $getTitle,
+                    'slug' => get_post_field('post_name', get_the_ID()),
+                    'content' => get_the_content(),
+                    'short_description' => get_post_meta(get_the_ID(), 'post_summary', true),
+                    'thumbnail' => get_post_meta(get_the_ID(), 'post_images_icon', true),
+                    'date' => get_the_date('Y/m/d'),
+                ];
+            }
+            
+            wp_reset_postdata();
+        } else {
+            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+        }
+        return new WP_REST_Response($results, 200);
+    }
+    public function getPostDetail($request)
+    {
+
+
+
+        $results = [];
+        $args = array(
+            'post_type' => POST_TYPE,
+            'post_status' => array('publish'),
+            // 'name' => $request['post_slug']
 
         );
         $posts = new WP_Query($args);

@@ -30,15 +30,14 @@ define('POST_TYPE', 'post');
 define('POST_TYPE_PAGE', 'page');
 define('VERSION', '1.0.0');
 define('EXCERPT_LENGTH', 40);
-define('API_NAME', 'lk_tech');
+define('API_NAME', 'convert');
 define('KEY_SUMMARY', 'post_summary');
 define('KEY_TEMPLATE_SERVICE', 'post_template_service');
 
 // Field post
 require_once(TEMPLATEPATH . '/fields/post-summary.php');
-require_once(TEMPLATEPATH . '/fields/post-temaplate-service.php');
+require_once(TEMPLATEPATH . '/fields/post-list-images.php');
 
-// require_once(TEMPLATEPATH . '/fields/post-list-images.php');
 
 /**
  * Require vendor
