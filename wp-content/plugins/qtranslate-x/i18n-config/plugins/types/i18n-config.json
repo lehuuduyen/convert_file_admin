@@ -1,0 +1,17 @@
+{"vendor":{"plugins/types":"1.0"},
+"admin-config": {
+"types-admin": {
+	"pages": { "admin.php":"page=wpcf-edit-type" },
+	"forms":{
+		"main":{
+			"fields":{
+				"name-plural":{},
+				"name-singular":{},
+				"textareas":{"jquery":"textarea[id^='textarea-']"},
+				"textfields":{"jquery":"input[id^='textfield-']"}
+			}
+		}
+	}
+}
+}
+}

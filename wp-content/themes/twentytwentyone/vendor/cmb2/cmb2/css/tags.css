@@ -1,0 +1,33 @@
+.cmb-type-tags .cmb2-metabox-description, 
+.cmb-type-tags-sortable .cmb2-metabox-description {
+	padding-top: 0.5em;
+	padding-bottom: 1em;	
+}
+.cmb-type-tags .hide-if-no-js {
+	display:none;
+}
+.cmb-type-tags-sortable span {
+	float:none;
+}
+.cmb-type-tags-sortable span:hover {
+	font-weight: 700;
+	cursor: move; /* fallback if grab cursor is unsupported */
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
+}
+.cmb-type-tags-sortable span.ui-sortable-helper {
+	cursor: grabbing;
+    cursor: -moz-grabbing;
+    cursor: -webkit-grabbing;
+}
+.cmb-type-tags .tagchecklist>li {
+    float: left;
+    margin-right: 26px !important; 
+    font-size: 13px;
+    line-height: 1.8;
+    cursor: default;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -10,9 +10,135 @@
  */
 
 // This theme requires WordPress 5.3 or later.
+
+define('KEY_ABOUT_SLIDE', 'about_slide_top');
+define('KEY_ABOUT_SPECICAL', 'about_slide_special');
+define('KEY_ABOUT_MISSION_BUSINESS', 'about_slide_mission_business');
+define('KEY_ABOUT_PHILOSOPHY_BUSINESS', 'about_slide_philosophy_business');
+define('KEY_ABOUT_TECHNOLOGY_IN_DOCHINA', 'about_slide_technology_in_dochina');
+define('KEY_TOP_SLIDE_TOP', 'banner_slide_top');
+define('KEY_PARTNER_SLIDE', 'partner_slide');
+define('KEY_TOP_SERVICE', 'service_slide_top');
+define('KEY_ABOUT_SERVICE', 'service_slide_about');
+define('KEY_TOP_PROJECT', 'project_slide_top');
+define('KEY_TOP_NEWS', 'news_slide_top');
+define('KEY_TOP_INFORMATION', 'information_slide_top');
+define('KEY_LIST_IMAGES', 'post_images');
+define('KEY_TOP_CONTACT', 'contact_slide_top');
+define('KEY_TOP_SOCICAL_NETWORK', 'socical_network_slide_top');
+define('POST_TYPE', 'post');
+define('POST_TYPE_PAGE', 'page');
+define('VERSION', '1.0.0');
+define('EXCERPT_LENGTH', 40);
+define('API_NAME', 'lk_tech');
+define('KEY_SUMMARY', 'post_summary');
+define('KEY_TEMPLATE_SERVICE', 'post_template_service');
+
+// Field post
+require_once(TEMPLATEPATH . '/fields/post-summary.php');
+require_once(TEMPLATEPATH . '/fields/post-temaplate-service.php');
+
+// require_once(TEMPLATEPATH . '/fields/post-list-images.php');
+
+/**
+ * Require vendor
+ */
+require_once(TEMPLATEPATH . '/vendor/cmb2/cmb2/init.php');
+require_once(TEMPLATEPATH . '/vendor/cmb2/cmb2/cmb-field-select2.php');
+require_once(TEMPLATEPATH . '/vendor/cmb2/cmb2/cmb2-field-type-tags.php');
+require_once(TEMPLATEPATH . '/vendor/alexis-magina/cmb2-field-post-search-ajax/cmb-field-post-search-ajax.php');
+require_once(TEMPLATEPATH . '/vendor/webdevstudios/cmb2-attached-posts/cmb2-attached-posts-field.php');
+require_once(TEMPLATEPATH . '/cores/core.php');
+require_once(TEMPLATEPATH . '/fields/page-setting-top.php');
+require_once(TEMPLATEPATH . '/fields/page-setting-about.php');
+
+require_once(TEMPLATEPATH . '/registerPage.php');
+
+//page top
+require_once(TEMPLATEPATH . '/fields/page-top-slide-top.php');
+require_once(TEMPLATEPATH . '/fields/page-top-service.php');
+require_once(TEMPLATEPATH . '/fields/page-top-information.php');
+require_once(TEMPLATEPATH . '/fields/page-top-project.php');
+// require_once(TEMPLATEPATH . '/fields/page-top-news.php');
+require_once(TEMPLATEPATH . '/fields/page-top-contact-group.php');
+require_once(TEMPLATEPATH . '/fields/page-top-social-network.php');
+// page partner
+require_once(TEMPLATEPATH . '/fields/page-partner-slide.php');
+// page about
+require_once(TEMPLATEPATH . '/fields/page-about-slide.php');
+require_once(TEMPLATEPATH . '/fields/page-about-specical.php');
+require_once(TEMPLATEPATH . '/fields/page-about-philosophy-business.php');
+require_once(TEMPLATEPATH . '/fields/page-about-mission-business.php');
+require_once(TEMPLATEPATH . '/fields/page-about-service.php');
+require_once(TEMPLATEPATH . '/fields/page-about-technology_in_dochina.php');
+
+//api 
+require_once(TEMPLATEPATH . '/api/PostController.php');
+require_once(TEMPLATEPATH . '/api/MenuController.php');
+
+function getTopPageId() {
+    $topPageId = get_option('top_id',true);
+    return $topPageId;
+}
+function getPartnerPageId() {
+    $partnerPageId = get_option('partner_id',true);
+    return $partnerPageId;
+}
+function getAboutPageId() {
+    $aboutPageId = get_option('about_id',true);
+    return $aboutPageId;
+}
+function getLanguageId($value){
+	return (isset($_GET['lan']))?$_GET['lan']:$value;
+}
+function add_css_js_version( ) {
+    $dateNow = date('Y-m-d');
+    $version = VERSION;
+    $verDate = "$version&$dateNow";
+
+    return $verDate;
+}
+
+if (isset($_GET['post']) && $_GET['post'] == get_option('top_id',true)) {
+    require_once(TEMPLATEPATH . '/styleTop.php');
+}
+
+if (isset($_GET['post']) && $_GET['post'] == get_option('about_id',true)) {
+    require_once(TEMPLATEPATH . '/styleAbout.php');
+}
 if ( version_compare( $GLOBALS['wp_version'], '5.3', '<' ) ) {
 	require get_template_directory() . '/inc/back-compat.php';
 }
+add_action('admin_enqueue_scripts', 'styleMain');
+function styleMain()
+{
+    if (is_admin()) {
+        wp_enqueue_style('style-main', get_template_directory_uri() . '/assets/css/main.css');
+        wp_enqueue_style('style-main');
+       
+    }
+}
+
+// Add column
+add_filter('manage_posts_columns', 'wpbs_display_branch_post_column_head');
+function wpbs_display_branch_post_column_head($columns)
+{
+    $columns['branch_post'] = 'ID';
+    return $columns;
+}
+add_action('manage_posts_custom_column', 'wpbs_display_branch_post_column_content', 10, 2);
+function wpbs_display_branch_post_column_content($column_key)
+{
+    if($column_key == 'branch_post'){
+        global $post;
+        $contentBranch = get_post_field('post_name', $post->ID);
+        echo $contentBranch;
+    }
+    
+}
+
+
+
 
 if ( ! function_exists( 'twenty_twenty_one_setup' ) ) {
 	/**
@@ -340,7 +466,7 @@ if ( ! function_exists( 'twenty_twenty_one_setup' ) ) {
 		add_theme_support( 'custom-units' );
 
 		// Remove feed icon link from legacy RSS widget.
-		add_filter( 'rss_widget_feed_link', '__return_empty_string' );
+		add_filter( 'rss_widget_feed_link', '__return_false' );
 	}
 }
 add_action( 'after_setup_theme', 'twenty_twenty_one_setup' );

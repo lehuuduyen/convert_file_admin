@@ -1,0 +1,158 @@
+[
+    {
+        "name": "alexis-magina/cmb2-field-post-search-ajax",
+        "version": "dev-master",
+        "version_normalized": "9999999-dev",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/alexis-magina/cmb2-field-post-search-ajax.git",
+            "reference": "4c8120e5919339fc692acd3823f91f0381040905"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/alexis-magina/cmb2-field-post-search-ajax/zipball/4c8120e5919339fc692acd3823f91f0381040905",
+            "reference": "4c8120e5919339fc692acd3823f91f0381040905",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">5.2.4"
+        },
+        "suggest": {
+            "composer/installers": "~1.0"
+        },
+        "time": "2017-04-24T16:05:39+00:00",
+        "type": "wordpress-plugin",
+        "installation-source": "source",
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "GPL-3.0"
+        ],
+        "authors": [
+            {
+                "name": "Magina",
+                "email": "contact@magina.fr",
+                "homepage": "https://github.com/alexis-magina/",
+                "role": "Developer"
+            }
+        ],
+        "description": "CMB2 field type to attach posts to each others. Search with Ajax.",
+        "homepage": "https://github.com/alexis-magina/cmb2-field-post-search-ajax",
+        "keywords": [
+            "attached",
+            "metabox",
+            "plugin",
+            "post",
+            "related",
+            "relationship",
+            "wordpress"
+        ]
+    },
+    {
+        "name": "cmb2/cmb2",
+        "version": "dev-master",
+        "version_normalized": "9999999-dev",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/CMB2/CMB2.git",
+            "reference": "058085b36fb0d2f3aa134cc82a7af9a36b390fc7"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/CMB2/CMB2/zipball/058085b36fb0d2f3aa134cc82a7af9a36b390fc7",
+            "reference": "058085b36fb0d2f3aa134cc82a7af9a36b390fc7",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">5.2.4"
+        },
+        "require-dev": {
+            "apigen/apigen": "4.1.2",
+            "nette/utils": "2.5.3",
+            "phpunit/phpunit": "6.5.13"
+        },
+        "suggest": {
+            "composer/installers": "~1.0"
+        },
+        "time": "2020-04-30T13:06:07+00:00",
+        "type": "wordpress-plugin",
+        "installation-source": "source",
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "GPL-2.0-or-later"
+        ],
+        "authors": [
+            {
+                "name": "Justin Sternberg",
+                "email": "justin@dsgnwrks.pro",
+                "homepage": "https://dsgnwrks.pro",
+                "role": "Developer"
+            },
+            {
+                "name": "WebDevStudios",
+                "email": "contact@webdevstudios.com",
+                "homepage": "https://github.com/WebDevStudios",
+                "role": "Developer"
+            }
+        ],
+        "description": "CMB2 is a metabox, custom fields, and forms library for WordPress that will blow your mind.",
+        "homepage": "https://github.com/CMB2/CMB2",
+        "keywords": [
+            "metabox",
+            "plugin",
+            "wordpress"
+        ]
+    },
+    {
+        "name": "webdevstudios/cmb2-attached-posts",
+        "version": "dev-master",
+        "version_normalized": "9999999-dev",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/CMB2/cmb2-attached-posts.git",
+            "reference": "368252449953c0f13687151ee4850d9ebf011be9"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/CMB2/cmb2-attached-posts/zipball/368252449953c0f13687151ee4850d9ebf011be9",
+            "reference": "368252449953c0f13687151ee4850d9ebf011be9",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">5.2.4"
+        },
+        "suggest": {
+            "composer/installers": "~1.0"
+        },
+        "time": "2019-05-06T18:51:12+00:00",
+        "type": "wordpress-plugin",
+        "installation-source": "source",
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "GPL-2.0+"
+        ],
+        "authors": [
+            {
+                "name": "Justin Sternberg",
+                "email": "justin@dsgnwrks.pro",
+                "homepage": "https://dsgnwrks.pro",
+                "role": "Developer"
+            },
+            {
+                "name": "WebDevStudios",
+                "email": "contact@webdevstudios.com",
+                "homepage": "https://github.com/WebDevStudios",
+                "role": "Developer"
+            }
+        ],
+        "description": "Custom field for CMB2 for creating post relationships.",
+        "homepage": "https://github.com/CMB2/CMB2",
+        "keywords": [
+            "attached",
+            "metabox",
+            "plugin",
+            "post",
+            "relationship",
+            "wordpress"
+        ]
+    }
+]

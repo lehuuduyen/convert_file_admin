@@ -1,0 +1,40 @@
+#pageparentdiv,
+#postimagediv,
+#post-body-content,
+.wp-heading-inline,
+.page-title-action,
+#minor-publishing-actions,
+.misc-pub-post-status,
+.misc-pub-visibility,
+.misc-pub-revisions,
+#delete-action,
+#screen-meta-links {
+    display: none !important;
+}
+
+#menu-pages {
+    height: 34px;
+    overflow: hidden;
+}
+
+#adminmenu li.wp-has-current-submenu#menu-pages a.wp-has-current-submenu {
+    background: transparent;
+}
+#advanced-sortables{
+    display: none;
+}
+#misc-publishing-actions{
+    display: none !important
+}
+
+#adminmenu .wp-has-current-submenu#menu-pages div.wp-menu-image:before {
+    color: #a0a5aa;
+    color: rgba(240, 245, 250, .6);
+}
+
+ul#adminmenu .wp-has-current-submenu#menu-pages a.wp-has-current-submenu:after {
+    display: none;
+}
+.form-control{
+    width: 100% !important;
+}
