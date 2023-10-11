@@ -11,10 +11,10 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getTop')
             ),
         ));
-        register_rest_route($this->nameSpace, 'about', array(
+        register_rest_route($this->nameSpace, 'format-file', array(
             array(
-                'methods' => 'GET',
-                'callback' => array($this, 'getAbout')
+                'methods' => 'POST',
+                'callback' => array($this, 'formatFile')
             ),
         ));
         register_rest_route($this->nameSpace, 'posts-category/(?P<category>[a-zA-Z0-9-_]+)', array(
@@ -35,77 +35,26 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getPostDetail')
             ),
         ));
-        register_rest_route($this->nameSpace, 'search', array(
-            array(
-                'methods' => 'GET',
-                'callback' => array($this, 'search')
-            ),
-        ));
-        register_rest_route($this->nameSpace, 'send', array(
-            array(
-                'methods' => 'POST',
-                'callback' => array($this, 'send')
-            ),
-        ));
+        
     }
-    public function send()
-    {
-  
-        $data = json_decode(file_get_contents('php://input'), true);
-     
-        $emailForm = (isset($data['to'])) ? $data['to'] : "";
-        if (!filter_var($emailForm, FILTER_VALIDATE_EMAIL)) {
-            return new WP_Error('Mail contact', __('Invalid email format'), array('status' => 500));
-        }
-        $emailTo = get_option('mail_from_name',true);
-        $fullname = (isset($data['fullname'])) ? $data['fullname'] : "";
-        $phone = (isset($data['phone'])) ? $data['phone'] : "";
-        $company = (isset($data['company'])) ? $data['company'] : "";
-        $content = (isset($data['content'])) ? $data['content'] : "";
-        $subject = 'Liên hệ được gửi tử email: ' . $emailForm;
-        $message = "<p>Fullname: $fullname</p>
-        <p>Phone: $phone</p>
-        <p>Company: $company</p>
-        <p>Content: $content</p>";
 
-
-        // Set SMTPDebug to true
-        //$phpmailer->SMTPDebug = true;
-
-        // Start output buffering to grab smtp debugging output
-        //ob_start();
-
-        // Send the test mail
-        $result = wp_mail($emailTo, $subject, $message);
-        $results = [];
-
-        $results['code'] = 'success';
-        $results['data'] = new stdClass;
-
-        return new WP_REST_Response($results, 200);
-    }
     public function getPost($request)
     {
-
-
-
         $results = [];
         $args = array(
             'post_type' => POST_TYPE,
             'post_status' => array('publish'),
         );
         $posts = new WP_Query($args);
-      
-        
         if ($posts->have_posts()) {
             $results['code'] = 'success';
             while ($posts->have_posts()) {
                 $posts->the_post();
                 $getTitle =  get_the_title();
-               
-                
+
+
                 //Get content without caption
-                $results['data'][]= [
+                $results['data'][] = [
                     'title' => $getTitle,
                     'slug' => get_post_field('post_name', get_the_ID()),
                     'content' => get_the_content(),
@@ -114,7 +63,7 @@ class PostController extends WP_REST_Controller
                     'date' => get_the_date('Y/m/d'),
                 ];
             }
-            
+
             wp_reset_postdata();
         } else {
             return new WP_Error('no_posts', __('No post found'), array('status' => 404));
@@ -134,8 +83,8 @@ class PostController extends WP_REST_Controller
 
         );
         $posts = new WP_Query($args);
-      
-        
+
+
         if ($posts->have_posts()) {
             $results['code'] = 'success';
             while ($posts->have_posts()) {
@@ -152,447 +101,406 @@ class PostController extends WP_REST_Controller
                     'thumbnail' => has_post_thumbnail() ? get_the_post_thumbnail_url() : '',
                     'date' => get_the_date('Y/m/d'),
                 ];
-                
-                $images = (is_array($listImage))?array_values($listImage):[];
+
+                $images = (is_array($listImage)) ? array_values($listImage) : [];
                 $results['data']['images'] = $images;
             }
-            
+
             wp_reset_postdata();
         } else {
             return new WP_Error('no_posts', __('No post found'), array('status' => 404));
         }
         return new WP_REST_Response($results, 200);
     }
-    public function getCategory($request)
+    // public function getCategory($request)
+    // {
+
+    //     $results = [];
+
+
+    //     $queryParams = $request->get_query_params();
+    //     //Pagination param
+    //     $page = 1;
+    //     $postPerPage = (int)get_option('posts_per_page');
+    //     if (isset($queryParams['page']) && $queryParams['page'] > 1) {
+    //         $page = (int)$queryParams['page'];
+    //     }
+    //     //Get Post of category
+    //     $args = array(
+    //         'post_type' => POST_TYPE,
+    //         'post_status' => array('publish'),
+    //         'order' => 'DESC',
+    //         'category_name' => $request['category'],
+    //         'posts_per_page' => $postPerPage,
+    //         'paged' => $page,
+    //     );
+
+
+    //     //Get data for glossary
+    //     $posts = new WP_Query($args);
+    //     if ($posts->have_posts()) {
+
+    //         $results['code'] = 'success';
+    //         $key = 0;
+    //         // Set default data null
+    //         while ($posts->have_posts()) {
+    //             $posts->the_post();
+    //             $getTitle =  get_the_title();
+    //             $category_detail=get_the_category(get_the_ID());//$post->ID
+    //             //Get content without caption
+    //             $results['data'][$key] = [
+    //                 'title' => $getTitle,
+    //                 'slug' => get_post_field('post_name', get_the_ID()),
+    //                 'location' =>  get_post_meta(get_the_ID(), KEY_SUMMARY . '_location', true),
+    //                 'thumbnail' => has_post_thumbnail() ? get_the_post_thumbnail_url() : '',
+    //                 'slug_category' => (!empty($category_detail))?$category_detail[0]->slug:"",
+    //                 'date' => get_the_date('Y/m/d')
+    //             ];
+
+    //             $key++;
+    //         }
+    //         //Pagination data
+    //         $results['pagination'] = [
+    //             'current_page' => $page,
+    //             'total' => (int)$posts->found_posts,
+    //             'post_per_page' => $postPerPage,
+    //         ];
+    //         wp_reset_postdata();
+    //         return new WP_REST_Response($results, 200);
+    //     } else {
+    //         return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+    //     }
+    // }
+
+    // public function search($request)
+    // {
+
+    //     $results = [];
+    //     $search = (isset($_GET['s'])) ? $_GET['s'] : "";
+
+    //     $queryParams = $request->get_query_params();
+    //     //Pagination param
+    //     $page = 1;
+    //     $postPerPage = (int)get_option('posts_per_page');
+    //     if (isset($queryParams['page']) && $queryParams['page'] > 1) {
+    //         $page = (int)$queryParams['page'];
+    //     }
+
+    //     //Get Post of category
+    //     $args = array(
+    //         'post_type' => POST_TYPE,
+    //         'post_status' => array('publish'),
+    //         'order' => 'DESC',
+    //         'category_name' => 'project',
+    //         's' => $search,
+    //         'posts_per_page' => $postPerPage,
+    //         'paged' => $page,
+    //     );
+
+
+    //     //Get data for glossary
+    //     $posts = new WP_Query($args);
+
+    //     if ($posts->have_posts()) {
+
+    //         $results['code'] = 'success';
+    //         $key = 0;
+    //         // Set default data null
+    //         while ($posts->have_posts()) {
+    //             $posts->the_post();
+    //             $getTitle =  get_the_title();
+    //             $category_detail=get_the_category(get_the_ID());//$post->ID
+
+
+    //             //Get content without caption
+    //             $results['data'][$key] = [
+    //                 'title' => $getTitle,
+    //                 'slug' => get_post_field('post_name', get_the_ID()),
+    //                 'location' =>  get_post_meta(get_the_ID(), KEY_SUMMARY . '_location', true),
+    //                 'thumbnail' => has_post_thumbnail() ? get_the_post_thumbnail_url() : '',
+    //                 'slug_category' => (!empty($category_detail))?$category_detail[0]->slug:"",
+    //                 'date' => get_the_date('Y/m/d')
+
+    //             ];
+
+    //             $key++;
+    //         }
+    //         //Pagination data
+    //         $results['pagination'] = [
+    //             'current_page' => $page,
+    //             'total' => (int)$posts->found_posts,
+    //             'post_per_page' => $postPerPage,
+    //         ];
+    //         wp_reset_postdata();
+
+    //         return new WP_REST_Response($results, 200);
+    //     } else {
+    //         return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+    //     }
+    // }
+    public function getSize($image)
+    {
+        return number_format((int)filesize($image) / 1024, 2, '.', '') . 'KB';
+    }
+    public function getObjectSize($image, $imageName)
+    {
+        $result['oldSize'] = $this->getSize($image);
+        // $result['newSize'] = $this->getSize('file/compress_' . $imageName);
+        $result['newSize'] = $this->getSize($imageName);
+        return $result;
+    }
+    public function resizeImage($image, $imageName, $outputQuality)
+    {
+        try {
+            //code...
+            $result = [];
+
+            $imageInfo = getimagesize($image);
+
+
+            $result['oldSize'] = $this->getSize($image);
+            $result['mime'] = $imageInfo['mime'];
+
+
+            if ($imageInfo['mime'] == 'image/gif') {
+
+                $imageLayer = imagecreatefromgif($image);
+            } elseif ($imageInfo['mime'] == 'image/jpeg') {
+
+                $imageLayer = imagecreatefromjpeg($image);
+            } elseif ($imageInfo['mime'] == 'image/png') {
+
+                $imageLayer = imagecreatefrompng($image);
+            }
+
+            $compressedImage = imagejpeg($imageLayer, 'file/compress_' . $imageName, $outputQuality);
+
+
+            if ($compressedImage) {
+                $result['newSize'] = $this->getSize('file/compress_' . $imageName);
+                $result['percent'] = '-' . number_format(100 - ((int)$result['newSize'] * 100 / (int)$result['oldSize']), 2, '.', '') . "%";
+                return $result;
+                exit;
+            } else {
+                return 'An error occured!';
+                exit;
+            }
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+    public function urlPathFile()
     {
 
-        $results = [];
-
-
-        $queryParams = $request->get_query_params();
-        //Pagination param
-        $page = 1;
-        $postPerPage = (int)get_option('posts_per_page');
-        if (isset($queryParams['page']) && $queryParams['page'] > 1) {
-            $page = (int)$queryParams['page'];
-        }
-        //Get Post of category
-        $args = array(
-            'post_type' => POST_TYPE,
-            'post_status' => array('publish'),
-            'order' => 'DESC',
-            'category_name' => $request['category'],
-            'posts_per_page' => $postPerPage,
-            'paged' => $page,
-        );
-
-
-        //Get data for glossary
-        $posts = new WP_Query($args);
-        if ($posts->have_posts()) {
-
-            $results['code'] = 'success';
-            $key = 0;
-            // Set default data null
-            while ($posts->have_posts()) {
-                $posts->the_post();
-                $getTitle =  get_the_title();
-                $category_detail=get_the_category(get_the_ID());//$post->ID
-                //Get content without caption
-                $results['data'][$key] = [
-                    'title' => $getTitle,
-                    'slug' => get_post_field('post_name', get_the_ID()),
-                    'location' =>  get_post_meta(get_the_ID(), KEY_SUMMARY . '_location', true),
-                    'thumbnail' => has_post_thumbnail() ? get_the_post_thumbnail_url() : '',
-                    'slug_category' => (!empty($category_detail))?$category_detail[0]->slug:"",
-                    'date' => get_the_date('Y/m/d')
-                ];
-
-                $key++;
-            }
-            //Pagination data
-            $results['pagination'] = [
-                'current_page' => $page,
-                'total' => (int)$posts->found_posts,
-                'post_per_page' => $postPerPage,
-            ];
-            wp_reset_postdata();
-            return new WP_REST_Response($results, 200);
+        if (isset($_SERVER['HTTPS'])) {
+            $protocol = ($_SERVER['HTTPS'] && $_SERVER['HTTPS'] != "off") ? "https" : "http";
         } else {
-            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+            $protocol = 'http';
         }
+        return $protocol . "://" . $_SERVER['HTTP_HOST'] . "/" . "file/";
     }
-    
-    public function search($request)
+    public function formatFile($request)
     {
+        try {
+            set_error_handler(function ($severity, $message, $file, $line) {
+                throw new \ErrorException($message, 0, $severity, $file, $line);
+            });
+            $file = $_FILES["file"];
+            $file['name'] = time() . "_" . rand(1, 9999) . "_" . $file['name'];
+            $tempFilePath = $file['tmp_name'];
+            $to = $_POST['to'];
+            $targetDirectory = './file/';
+            $currentFloderDomain = 'file/';
 
-        $results = [];
-        $search = (isset($_GET['s'])) ? $_GET['s'] : "";
-
-        $queryParams = $request->get_query_params();
-        //Pagination param
-        $page = 1;
-        $postPerPage = (int)get_option('posts_per_page');
-        if (isset($queryParams['page']) && $queryParams['page'] > 1) {
-            $page = (int)$queryParams['page'];
-        }
-
-        //Get Post of category
-        $args = array(
-            'post_type' => POST_TYPE,
-            'post_status' => array('publish'),
-            'order' => 'DESC',
-            'category_name' => 'project',
-            's' => $search,
-            'posts_per_page' => $postPerPage,
-            'paged' => $page,
-        );
-
-
-        //Get data for glossary
-        $posts = new WP_Query($args);
-        
-        if ($posts->have_posts()) {
-
-            $results['code'] = 'success';
-            $key = 0;
-            // Set default data null
-            while ($posts->have_posts()) {
-                $posts->the_post();
-                $getTitle =  get_the_title();
-                $category_detail=get_the_category(get_the_ID());//$post->ID
-
-
-                //Get content without caption
-                $results['data'][$key] = [
-                    'title' => $getTitle,
-                    'slug' => get_post_field('post_name', get_the_ID()),
-                    'location' =>  get_post_meta(get_the_ID(), KEY_SUMMARY . '_location', true),
-                    'thumbnail' => has_post_thumbnail() ? get_the_post_thumbnail_url() : '',
-                    'slug_category' => (!empty($category_detail))?$category_detail[0]->slug:"",
-                    'date' => get_the_date('Y/m/d')
-
-                ];
-
-                $key++;
+            if (!is_dir($targetDirectory)) {
+                mkdir($targetDirectory, 0777, true);
             }
-            //Pagination data
-            $results['pagination'] = [
-                'current_page' => $page,
-                'total' => (int)$posts->found_posts,
-                'post_per_page' => $postPerPage,
-            ];
-            wp_reset_postdata();
-            
-            return new WP_REST_Response($results, 200);
-        } else {
-            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
-        }
-    }
-    public function getTop()
-    {
-        $language = getLanguageId(qtranxf_getLanguage());
-        $topPage = get_post_meta(getTopPageId());
-        $data = [];
-        if (isset($topPage['banner_slide_top_post'])) {
-            $slideTops = [];
-            $tempSlideTop = [];
-            $listSlideTop = unserialize($topPage['banner_slide_top_post'][0]);
-            $listSlideTop = array_slice($listSlideTop, 0, 10);
-            $listSlideTops = get_posts([
-                'include' => $listSlideTop,
-                'order' => 'ASC',
-                'orderby' => 'post__in'
-            ]);
-            foreach ($listSlideTops as $key => $val) {
-                if (isset($val->ID)) {
-                    $tempSlideTop[$val->ID] = $val;
+            if (mime_content_type($tempFilePath) == "image/jpeg") {
+                switch ($to) {
+                    case "png":
+                        $output = str_replace([".jpg", ".jpeg"], "", $file['name']) . ".png";
+                        $jpegImage = imagecreatefromjpeg($tempFilePath);
+                        // Create a new blank PNG image
+                        $width = imagesx($jpegImage);
+                        $height = imagesy($jpegImage);
+                        $pngImage = imagecreatetruecolor($width, $height);
+                        $whiteColor = imagecolorallocate($pngImage, 255, 255, 255);
+                        imagefill($pngImage, 0, 0, $whiteColor);
+                        imagecopy($pngImage, $jpegImage, 0, 0, 0, 0, $width, $height);
+
+                        $tempPngFilePath =  $currentFloderDomain . $output;
+                        imagepng($pngImage, $tempPngFilePath);
+                        // Clean up memory
+                        imagedestroy($jpegImage);
+                        imagedestroy($pngImage);
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $output, 'data' => json_encode($result)));
+                        break;
+                    case 'gif':
+                        $outputGif = str_replace([".jpg", ".jpeg"], "", $file['name']) . ".gif";
+                        $jpegImage = imagecreatefromjpeg($tempFilePath);
+                        $width = imagesx($jpegImage);
+                        $height = imagesy($jpegImage);
+                        $gifImage = imagecreatetruecolor($width, $height);
+                        $whiteColor = imagecolorallocate($gifImage, 255, 255, 255);
+                        imagefill($gifImage, 0, 0, $whiteColor);
+                        imagecopy($gifImage, $jpegImage, 0, 0, 0, 0, $width, $height);
+                        $gifFilePath =  $currentFloderDomain . $outputGif;
+                        imagegif($gifImage, $gifFilePath);
+                        imagedestroy($jpegImage);
+                        imagedestroy($gifImage);
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $outputGif);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $outputGif, 'data' => json_encode($result)));                    // echo $gifFilePath;
+                        break;
+                    case 'pdf':
+                        require('fpdf/fpdf.php');
+                        $output = str_replace([".jpg", ".jpeg"], "", $file['name']) . ".pdf";
+
+                        $jpegFilePath = $tempFilePath;
+                        $pdfFilePath = $currentFloderDomain . $output;
+
+                        $pdf = new FPDF();
+                        $pdf->AddPage();
+
+                        $pdf->SetAutoPageBreak(true, 10);
+                        $pdf->Image($jpegFilePath, 10, 10, 190, 0, 'JPEG');
+
+                        $pdf->Output($pdfFilePath, 'F');
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $output, 'data' => json_encode($result)));
+                        break;
+                    case 'jpg':
+                        $outputJpg = $currentFloderDomain . str_replace(".jpeg", "", $file['name']) . ".jpg";
+                        rename($tempFilePath, $outputJpg);
+
+                        $result = $this->getObjectSize($tempFilePath, $outputJpg);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $outputJpg));
+                        break;
+                    case 'jpeg':
+                        $outputJpeg = $currentFloderDomain . str_replace(".jpg", "", $file['name']) . ".jpeg";
+                        rename($tempFilePath, $outputJpeg);
+
+
+                        $result = $this->getObjectSize($tempFilePath, $outputJpeg);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $outputJpeg, 'data' => json_encode($result)));
+                        break;
+                    case "ico":
+                        require('php-ico/class-php-ico.php');
+                        $output = str_replace([".jpg", ".jpeg"], "", $file['name']) . ".ico";
+                        $tempIcoFilePath =  $currentFloderDomain . $output;
+                        $ico_lib = new PHP_ICO($tempFilePath);
+                        $ico_lib->save_ico($tempIcoFilePath);
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $output, 'data' => json_encode($result)));
+                        break;
+                    case "tinyPNG":
+                        $sourceImg = $tempFilePath;
+                        $fileName = $file['name'];
+
+                        $d = $this->resizeImage($sourceImg, $fileName, 50);
+
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . 'compress_' . $fileName, 'data' => json_encode($d)));
+                        break;
+                    default:
+                        echo json_encode(array("error" => "Failed to load file."));
+                }
+            } else if (mime_content_type($tempFilePath) == "image/png") {
+
+                switch ($to) {
+                    case "jpeg":
+                        $output = str_replace(".png", "", $file['name']) . ".jpeg";
+                        $pngImage = imagecreatefrompng($tempFilePath);
+                        // Create a new blank PNG image
+                        $width = imagesx($pngImage);
+                        $height = imagesy($pngImage);
+                        $jpegImage = imagecreatetruecolor($width, $height);
+                        $whiteColor = imagecolorallocate($pngImage, 255, 255, 255);
+                        imagefill($jpegImage, 0, 0, $whiteColor);
+                        imagecopy($jpegImage, $pngImage, 0, 0, 0, 0, $width, $height);
+
+                        $tempJpegFilePath =  $currentFloderDomain . $output;
+                        imagejpeg($jpegImage, $tempJpegFilePath, 90);
+
+                        imagedestroy($pngImage);
+                        imagedestroy($jpegImage);
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $output, 'data' => json_encode($result)));
+                        break;
+                    case "jpg":
+                        $output = str_replace(".png", "", $file['name']) . ".jpg";
+                        $pngImage = imagecreatefrompng($tempFilePath);
+                        // Create a new blank PNG image
+                        $width = imagesx($pngImage);
+                        $height = imagesy($pngImage);
+                        $jpegImage = imagecreatetruecolor($width, $height);
+                        $whiteColor = imagecolorallocate($pngImage, 255, 255, 255);
+                        imagefill($jpegImage, 0, 0, $whiteColor);
+                        imagecopy($jpegImage, $pngImage, 0, 0, 0, 0, $width, $height);
+
+                        $tempJpgFilePath =  $currentFloderDomain . $output;
+                        imagejpeg($jpegImage, $tempJpgFilePath, 90);
+
+                        imagedestroy($pngImage);
+                        imagedestroy($jpegImage);
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $output, 'data' => json_encode($result)));
+                        break;
+                    case 'pdf':
+                        require('fpdf/fpdf.php');
+                        $output = str_replace(".png", "", $file['name']) . ".pdf";
+                        $pngFilePath = $tempFilePath;
+                        $pdfFilePath = $currentFloderDomain . $output;
+
+                        $pdf = new FPDF();
+                        $pdf->AddPage();
+
+                        $pdf->SetAutoPageBreak(true, 10);
+                        $pdf->Image($pngFilePath, 10, 10, 190, 0, 'PNG');
+
+                        $pdf->Output($pdfFilePath, 'F');
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $output, 'data' => json_encode($result)));
+                        break;
+                    case "ico":
+                        require('php-ico/class-php-ico.php');
+                        $output = str_replace([".png"], "", $file['name']) . ".ico";
+                        $tempIcoFilePath =  $currentFloderDomain . $output;
+                        $ico_lib = new PHP_ICO($tempFilePath);
+                        $ico_lib->save_ico($tempIcoFilePath);
+                        $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . $output, 'data' => json_encode($result)));
+                        break;
+                    case "tinyPNG":
+                        $sourceImg = $tempFilePath;
+                        $fileName = $file['name'];
+
+                        $d = $this->resizeImage($sourceImg, $fileName, 50);
+
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile() . 'compress_' . $fileName, 'data' => json_encode($d)));
+                        break;
+                    default:
+                        echo json_encode(array("error" => "Failed to load file."));
                 }
             }
+        } catch (Exception $e) {
+            echo '<pre>';
+            print_r($e);
+            die;
 
-
-            foreach ($listSlideTop as $val) {
-                if (isset($tempSlideTop[$val])) {
-                    $slideTops[] = $tempSlideTop[$val];
-                }
-            }
-            foreach ($slideTops as $keySlideTop => $post) {
-                $image_pc = has_post_thumbnail($post->ID) ? get_the_post_thumbnail_url($post->ID) : '';
-                $tempArr = [
-                    'thumbnail' => $image_pc,
-                    'title' => qtranxf_use($language, $post->post_title, true, true),
-                    'slug' => $post->post_name,
-                ];
-
-                $data[] = $tempArr;
-            }
+            echo json_encode(array("error" => "Failed to load convert. Please try again."));
+        } finally {
+            restore_error_handler();
         }
-        $results['banner'] = $data;
-
-
-        $data = [];
-        $data['title'] = isset($topPage['service_slide_top_title']) ?  qtranxf_use($language, $topPage['service_slide_top_title'][0], true, true) : "";
-
-        if (isset($topPage['service_slide_top_post'])) {
-            $slideTops = [];
-            $tempSlideTop = [];
-            $listSlideTop = unserialize($topPage['service_slide_top_post'][0]);
-            $listSlideTop = array_slice($listSlideTop, 0, 10);
-            $listSlideTops = get_posts([
-                'include' => $listSlideTop,
-                'order' => 'ASC',
-                'orderby' => 'post__in'
-            ]);
-            foreach ($listSlideTops as $key => $val) {
-                if (isset($val->ID)) {
-                    $tempSlideTop[$val->ID] = $val;
-                }
-            }
-
-
-            foreach ($listSlideTop as $val) {
-                if (isset($tempSlideTop[$val])) {
-                    $slideTops[] = $tempSlideTop[$val];
-                }
-            }
-            foreach ($slideTops as $keySlideTop => $post) {
-                $summary = qtranxf_use($language, get_post_meta($post->ID, 'post_summary', true), true, true);
-                $image_pc = has_post_thumbnail($post->ID) ? get_the_post_thumbnail_url($post->ID) : '';
-                $tempArr = [
-                    'thumbnail' => $image_pc,
-                    'title' => qtranxf_use($language, $post->post_title, true, true),
-                    'summary' => $summary,
-                    'slug' => $post->post_name,
-                ];
-
-                $data['list'][] = $tempArr;
-            }
-        }
-        $results['service'] = $data;
-
-        $data = [];
-
-
-        $data['title'] = isset($topPage['information_slide_top_title']) ?  qtranxf_use($language, $topPage['information_slide_top_title'][0], true, true) : "";
-        $data['slug'] = isset($topPage['information_slide_top_slug']) ? $topPage['information_slide_top_slug'][0] : "";
-        $data['short_description'] = isset($topPage['information_slide_top_short_description']) ?  qtranxf_use($language, $topPage['information_slide_top_short_description'][0], true, true) : "";
-        $data['image'] = isset($topPage['information_slide_top_image']) ? $topPage['information_slide_top_image'][0] : "";
-        $results['information'] = $data;
-
-
-
-        $data = [];
-        $data['title'] = isset($topPage['project_slide_top_title']) ?  qtranxf_use($language, $topPage['project_slide_top_title'][0], true, true) : "";
-
-        if (isset($topPage['project_slide_top_post'])) {
-            $slideTops = [];
-            $tempSlideTop = [];
-            $listSlideTop = unserialize($topPage['project_slide_top_post'][0]);
-            $listSlideTop = array_slice($listSlideTop, 0, 10);
-            $listSlideTops = get_posts([
-                'include' => $listSlideTop,
-                'order' => 'ASC',
-                'orderby' => 'post__in'
-            ]);
-            foreach ($listSlideTops as $key => $val) {
-                if (isset($val->ID)) {
-                    $tempSlideTop[$val->ID] = $val;
-                }
-            }
-
-
-            foreach ($listSlideTop as $val) {
-                if (isset($tempSlideTop[$val])) {
-                    $slideTops[] = $tempSlideTop[$val];
-                }
-            }
-            
-            
-            foreach ($slideTops as $keySlideTop => $post) {
-                $summary = qtranxf_use($language, get_post_meta($post->ID, 'post_summary', true), true, true);
-                $image_pc = has_post_thumbnail($post->ID) ? get_the_post_thumbnail_url($post->ID) : '';
-                $category_detail=get_the_category($post->ID);//$post->ID
-                
-                $tempArr = [
-                    'thumbnail' => $image_pc,
-                    'title' => qtranxf_use($language, $post->post_title, true, true),
-                    'summary' => $summary,
-                    'slug' => $post->post_name,
-                    'slug_category' => (!empty($category_detail))?$category_detail[0]->slug:"",
-                ];
-
-                $data['list'][] = $tempArr;
-            }
-        }
-        $results['project'] = $data;
-
-
-        $data = [];
-
-
-        $data['title'] = isset($topPage['partner_slide_title']) ?  qtranxf_use($language, $topPage['partner_slide_title'][0], true, true) : "";
-
-        if (isset($topPage['partner_slide_list'])) {
-            $listSlidePartner = unserialize($topPage['partner_slide_list'][0]);
-            $data['list'] = array_slice($listSlidePartner, 0);
-        }
-        $results['partner'] = $data;
-
-
-
-
-        return new WP_REST_Response(['code' => 'success', 'data' => $results], 200);
-    }
-
-    public function getAbout()
-    {
-        $language = getLanguageId(qtranxf_getLanguage());
-        $aboutPage = get_post_meta(getAboutPageId());
-
-        $data = [];
-
-        $data['title'] = isset($aboutPage['about_slide_top_title']) ?  qtranxf_use($language, $aboutPage['about_slide_top_title'][0], true, true) : "";
-        $data['long_description'] = isset($aboutPage['about_slide_top_description_long']) ?  qtranxf_use($language, $aboutPage['about_slide_top_description_long'][0], true, true) : "";
-        $data['short_description'] = isset($aboutPage['about_slide_top_description_short']) ?  qtranxf_use($language, $aboutPage['about_slide_top_description_short'][0], true, true) : "";
-        $data['image'] = isset($aboutPage['about_slide_top_image']) ? $aboutPage['about_slide_top_image'][0] : "";
-        $data['profile_download'] = isset($aboutPage['about_slide_top_download_profile']) ? $aboutPage['about_slide_top_download_profile'][0] : "";
-        $results['header'] = $data;
-
-
-
-        $data = [];
-        if (isset($aboutPage['about_slide_special_group'])) {
-            $slideTops = [];
-            $tempSlideTop = [];
-            $listSlideTop = unserialize($aboutPage['about_slide_special_group'][0]);
-
-
-            foreach ($listSlideTop as $keySlideTop => $special) {
-                $tempArr = [
-                    'number' => $special['about_slide_special_number'],
-                    'title' => qtranxf_use($language, $special['about_slide_special_title'], true, true),
-                    'summary' => qtranxf_use($language, $special['about_slide_special_summary'], true, true),
-                    'class_icon' => $special['about_slide_special_icon'],
-                ];
-
-                $data[] = $tempArr;
-            }
-        }
-        $results['special'] = $data;
-
-        $data = [];
-
-        $data['title'] = isset($aboutPage['about_slide_philosophy_business_title']) ?  qtranxf_use($language, $aboutPage['about_slide_philosophy_business_title'][0], true, true) : "";
-        $data['description'] = isset($aboutPage['about_slide_philosophy_business_description']) ?  qtranxf_use($language, $aboutPage['about_slide_philosophy_business_description'][0], true, true) : "";
-        $data['image'] = isset($aboutPage['about_slide_philosophy_business_image']) ? $aboutPage['about_slide_philosophy_business_image'][0] : "";
-        $results['philosophy_business'] = $data;
-
-
-        $data = [];
-
-        $data['title'] = isset($aboutPage['about_slide_mission_business_title']) ?  qtranxf_use($language, $aboutPage['about_slide_mission_business_title'][0], true, true) : "";
-        if (isset($aboutPage['about_slide_mission_business_group'])) {
-            $slideTops = [];
-            $tempSlideTop = [];
-            $listSlideTop = unserialize($aboutPage['about_slide_mission_business_group'][0]);
-
-
-            foreach ($listSlideTop as $keySlideTop => $special) {
-                $tempArr = [
-                    'title' => qtranxf_use($language, $special['about_slide_mission_business_group_title'], true, true),
-                    'summary' => qtranxf_use($language, $special['about_slide_mission_business_group_summary'], true, true),
-                ];
-
-                $data['list'][] = $tempArr;
-            }
-        }
-        $results['mission_business'] = $data;
-
-
-        $data = [];
-        $data2 = [];
-
-        $data['title'] = isset($aboutPage['service_slide_about_title']) ?  qtranxf_use($language, $aboutPage['service_slide_about_title'][0], true, true) : "";
-        $data['thumbnail_about'] = isset($aboutPage['service_slide_about_thumbnail']) ?  $aboutPage['service_slide_about_thumbnail'][0] : "";
-        if (isset($aboutPage['service_slide_about_post'])) {
-            $slideTops = [];
-            $tempSlideTop = [];
-            $listSlideTop = unserialize($aboutPage['service_slide_about_post'][0]);
-
-
-            $listSlideTop = array_slice($listSlideTop, 0, 10);
-            $listSlideTops = get_posts([
-                'include' => $listSlideTop,
-                'order' => 'ASC',
-                'orderby' => 'post__in'
-            ]);
-            foreach ($listSlideTops as $key => $val) {
-                if (isset($val->ID)) {
-                    $tempSlideTop[$val->ID] = $val;
-                }
-            }
-
-
-            foreach ($listSlideTop as $val) {
-                if (isset($tempSlideTop[$val])) {
-                    $slideTops[] = $tempSlideTop[$val];
-                }
-            }
-
-            foreach ($slideTops as $keySlideTop => $post) {
-                $summary = qtranxf_use($language, get_post_meta($post->ID, 'post_summary', true), true, true);
-                $icon = get_post_meta($post->ID, 'post_images_icon', true);
-
-                $tempArr = [
-                    'title' => qtranxf_use($language, $post->post_title, true, true),
-                    'summary' => $summary,
-                    'icon' => $icon,
-
-                ];
-                $listImage = get_post_meta($post->ID, KEY_LIST_IMAGES . '_list', true);
-              
-                
-                if ($listImage) {
-                    $listImage = array_values($listImage);
-                } else {
-                    $listImage = [];
-                }
-
-                $tempArr2 = [
-                    'title' => qtranxf_use($language, $post->post_title, true, true),
-                    'content' => qtranxf_use($language, $post->post_content, true, true),
-                    'images' => $listImage,
-
-                ];
-
-                $data['list'][] = $tempArr;
-                $data2[] = $tempArr2;
-            }
-        }
-        $results['service'] = $data;
-        $results['service_detail'] = $data2;
-
-
-
-        $data = [];
-
-        $topPage = get_post_meta(getTopPageId());
-
-        $data['title'] = isset($topPage['partner_slide_title']) ?  qtranxf_use($language, $topPage['partner_slide_title'][0], true, true) : "";
-
-        if (isset($topPage['partner_slide_list'])) {
-            $listSlidePartner = unserialize($topPage['partner_slide_list'][0]);
-            $data['list'] = array_slice($listSlidePartner, 0);
-        }
-        $results['partner'] = $data;
-        $data = [];
-        $data['title'] = isset($aboutPage['about_slide_technology_in_dochina_title']) ?  qtranxf_use($language, $aboutPage['about_slide_technology_in_dochina_title'][0], true, true) : "";
-        $data['image'] = isset($aboutPage['about_slide_technology_in_dochina_image']) ?  $aboutPage['about_slide_technology_in_dochina_image'][0] : "";
-        $results['technology'] = $data;
-
-
-
-        return new WP_REST_Response(['code' => 'success', 'data' => $results], 200);
     }
 }
 
