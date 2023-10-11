@@ -79,7 +79,7 @@ class PostController extends WP_REST_Controller
         $args = array(
             'post_type' => POST_TYPE,
             'post_status' => array('publish'),
-            // 'name' => $request['post_slug']
+            'name' => $request['post_slug']
 
         );
         $posts = new WP_Query($args);
@@ -90,20 +90,15 @@ class PostController extends WP_REST_Controller
             while ($posts->have_posts()) {
                 $posts->the_post();
                 $getTitle =  get_the_title();
-                $listImage = get_post_meta(get_the_ID(), KEY_LIST_IMAGES . '_list', true);
 
                 //Get content without caption
                 $results['data'] = [
                     'title' => $getTitle,
                     'slug' => get_post_field('post_name', get_the_ID()),
-                    'template' => (int)get_post_meta(get_the_ID(), KEY_TEMPLATE_SERVICE . '_id', true),
                     'content' => get_the_content(),
-                    'thumbnail' => has_post_thumbnail() ? get_the_post_thumbnail_url() : '',
+                    'thumbnail' => get_post_meta(get_the_ID(), 'post_images_icon', true),
                     'date' => get_the_date('Y/m/d'),
                 ];
-
-                $images = (is_array($listImage)) ? array_values($listImage) : [];
-                $results['data']['images'] = $images;
             }
 
             wp_reset_postdata();
