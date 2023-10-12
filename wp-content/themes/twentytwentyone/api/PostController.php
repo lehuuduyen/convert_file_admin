@@ -5,10 +5,10 @@ class PostController extends WP_REST_Controller
     private $nameSpace = API_NAME . '/v1';
     public function registerRoutes()
     {
-        register_rest_route($this->nameSpace, 'top', array(
+        register_rest_route($this->nameSpace, 'call-news', array(
             array(
-                'methods' => 'GET',
-                'callback' => array($this, 'getTop')
+                'methods' => 'POST',
+                'callback' => array($this, 'callNews')
             ),
         ));
         register_rest_route($this->nameSpace, 'format-file', array(
@@ -37,7 +37,31 @@ class PostController extends WP_REST_Controller
         ));
         
     }
-
+    public function callNews($request) {
+        $url = $request['url'];
+        $args = array(
+            'timeout'     => 5,
+            'redirection' => 5,
+            'httpversion' => '1.0',
+            'user-agent'  => 'WordPress/1' ,
+            'blocking'    => true,
+            'headers'     => array(),
+            'cookies'     => array(),
+            'body'        => null,
+            'compress'    => false,
+            'decompress'  => true,
+            'sslverify'   => true,
+            'stream'      => false,
+            'filename'    => null
+        ); 
+        
+        $response = wp_remote_get( $url, $args ); 
+        
+        $data = json_decode( wp_remote_retrieve_body( $response ) );
+        return new WP_REST_Response($data, 200);
+        
+        
+    }
     public function getPost($request)
     {
         $results = [];
@@ -59,7 +83,7 @@ class PostController extends WP_REST_Controller
                     'slug' => get_post_field('post_name', get_the_ID()),
                     'content' => get_the_content(),
                     'short_description' => get_post_meta(get_the_ID(), 'post_summary', true),
-                    'thumbnail' => get_post_meta(get_the_ID(), 'post_images_icon', true),
+                    'urlToImage' => get_post_meta(get_the_ID(), 'post_images_icon', true),
                     'date' => get_the_date('Y/m/d'),
                 ];
             }
@@ -96,7 +120,7 @@ class PostController extends WP_REST_Controller
                     'title' => $getTitle,
                     'slug' => get_post_field('post_name', get_the_ID()),
                     'content' => get_the_content(),
-                    'thumbnail' => get_post_meta(get_the_ID(), 'post_images_icon', true),
+                    'urlToImage' => get_post_meta(get_the_ID(), 'post_images_icon', true),
                     'date' => get_the_date('Y/m/d'),
                 ];
             }
