@@ -27,6 +27,7 @@ define('KEY_LIST_IMAGES', 'post_images');
 define('KEY_TOP_CONTACT', 'contact_slide_top');
 define('KEY_TOP_SOCICAL_NETWORK', 'socical_network_slide_top');
 define('POST_TYPE', 'post');
+define('POST_TYPE_FEED', 'wprss_feed_item');
 define('POST_TYPE_PAGE', 'page');
 define('VERSION', '1.0.0');
 define('EXCERPT_LENGTH', 40);

@@ -7,7 +7,7 @@ class PostController extends WP_REST_Controller
     {
         register_rest_route($this->nameSpace, 'call-news', array(
             array(
-                'methods' => 'POST',
+                'methods' => 'GET',
                 'callback' => array($this, 'callNews')
             ),
         ));
@@ -38,28 +38,56 @@ class PostController extends WP_REST_Controller
         
     }
     public function callNews($request) {
-        $url = $request['url'];
+        // $url = $request['url'];
+        // $args = array(
+        //     'timeout'     => 5,
+        //     'redirection' => 5,
+        //     'httpversion' => '1.0',
+        //     'user-agent'  => 'WordPress/1' ,
+        //     'blocking'    => true,
+        //     'headers'     => array(),
+        //     'cookies'     => array(),
+        //     'body'        => null,
+        //     'compress'    => false,
+        //     'decompress'  => true,
+        //     'sslverify'   => true,
+        //     'stream'      => false,
+        //     'filename'    => null
+        // ); 
+        
+        // $response = wp_remote_get( $url, $args ); 
+        
+        // $data = json_decode( wp_remote_retrieve_body( $response ) );
+        // return new WP_REST_Response($data, 200);
+        $results = [];
         $args = array(
-            'timeout'     => 5,
-            'redirection' => 5,
-            'httpversion' => '1.0',
-            'user-agent'  => 'WordPress/1' ,
-            'blocking'    => true,
-            'headers'     => array(),
-            'cookies'     => array(),
-            'body'        => null,
-            'compress'    => false,
-            'decompress'  => true,
-            'sslverify'   => true,
-            'stream'      => false,
-            'filename'    => null
-        ); 
-        
-        $response = wp_remote_get( $url, $args ); 
-        
-        $data = json_decode( wp_remote_retrieve_body( $response ) );
-        return new WP_REST_Response($data, 200);
-        
+            'post_type' => POST_TYPE_FEED,
+            'post_status' => array('publish'),
+        );
+        $posts = new WP_Query($args);
+        if ($posts->have_posts()) {
+            $results['code'] = 'success';
+            while ($posts->have_posts()) {
+                $posts->the_post();
+                $getTitle =  get_the_title();
+
+
+                //Get content without caption
+                $results['data'][] = [
+                    'title' => $getTitle,
+                    'slug' => get_post_field('post_name', get_the_ID()),
+                    'content' => get_the_content(),
+                    'link' => get_post_meta(get_the_ID(), 'post_summary', true),
+                    'urlToImage' => get_post_meta(get_the_ID(), 'post_images_icon', true),
+                    'date' => get_the_date('Y/m/d'),
+                ];
+            }
+
+            wp_reset_postdata();
+        } else {
+            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+        }
+        return new WP_REST_Response($results, 200);
         
     }
     public function getPost($request)
