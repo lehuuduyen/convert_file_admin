@@ -103,12 +103,20 @@ class PostController extends WP_REST_Controller
                 $image = str_replace('amp;','',$image);
                 preg_match("/<\/br>(.+)/", $content, $contentFormat);
                 //Get content without caption
+                $meeting_time =strtotime('+7 hours', time()) - strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i:s')));
+                $hours = floor($meeting_time / 3600); // Tính số giờ
+                if($hours > 0){
+                    $hours = $hours .":";
+                }else{
+                    $hours ="";
+                }
+                $minutes = floor(($meeting_time % 3600) / 60); // Tính số phút
                 $results['data'][] = [
                     'title' => $getTitle,
                     'slug' => get_post_field('post_name', get_the_ID()),
                     'content' =>  (isset($contentFormat[1]))?$contentFormat[1]:$content,
                     'urlToImage' => (isset($image[1]))?$image[1]:"",
-                    'date' => get_the_date('Y/m/d H:i:s'),
+                    'date' => $hours .$minutes ."mins ago",
                 ];
             }
 
