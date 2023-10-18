@@ -35,51 +35,80 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getPostDetail')
             ),
         ));
-        
     }
-    public function callNews($request) {
-        // $url = $request['url'];
-        // $args = array(
-        //     'timeout'     => 5,
-        //     'redirection' => 5,
-        //     'httpversion' => '1.0',
-        //     'user-agent'  => 'WordPress/1' ,
-        //     'blocking'    => true,
-        //     'headers'     => array(),
-        //     'cookies'     => array(),
-        //     'body'        => null,
-        //     'compress'    => false,
-        //     'decompress'  => true,
-        //     'sslverify'   => true,
-        //     'stream'      => false,
-        //     'filename'    => null
-        // ); 
-        
-        // $response = wp_remote_get( $url, $args ); 
-        
-        // $data = json_decode( wp_remote_retrieve_body( $response ) );
-        // return new WP_REST_Response($data, 200);
+    public function callNews($request)
+    {
+        // try {
+        //     $url = 'https://vnexpress.net/chinh-phu-de-xuat-giao-them-hon-2-500-ty-cho-bo-nganh-va-dia-phuong-4665737.html';
+        //     $args = array(
+        //         'timeout'     => 5,
+        //         'redirection' => 5,
+        //         'httpversion' => '1.0',
+        //         'user-agent'  => 'WordPress/1',
+        //         'blocking'    => true,
+        //         'headers'     => array(),
+        //         'cookies'     => array(),
+        //         'body'        => null,
+        //         'compress'    => false,
+        //         'decompress'  => true,
+        //         'sslverify'   => true,
+        //         'stream'      => false,
+        //         'filename'    => null
+        //     );
+
+        //     $response = wp_remote_get($url, $args);
+        //     $htmlString = (string) $response['body'];
+        //     libxml_use_internal_errors(true);
+        //     $doc = new DOMDocument();
+        //     $doc->loadHTML($htmlString);
+        //     $xpath = new DOMXPath($doc);
+            
+        //     $title = $xpath->evaluate('//div[@class="sidebar-1"]//h1[@class="title-detail"]')[0]->textContent;
+        //     $prices = $xpath->evaluate('//ol[@class="row"]//li//article//div[@class="product_price"]//p[@class="price_color"]');
+         
+        //     echo $title ;
+            
+            
+        // } catch (\Throwable $th) {
+        //     echo '<pre>';
+        //     print_r($th);
+        //     die;
+            
+        // }
+        // // $data = json_decode( wp_remote_retrieve_body( $response ) );
+        // // return new WP_REST_Response($data, 200);
+
+
+        // die;
+
+
+
+            
+            
         $results = [];
         $args = array(
             'post_type' => POST_TYPE_FEED,
             'post_status' => array('publish'),
         );
+
+        
         $posts = new WP_Query($args);
         if ($posts->have_posts()) {
             $results['code'] = 'success';
             while ($posts->have_posts()) {
                 $posts->the_post();
                 $getTitle =  get_the_title();
-
-
+                $content = get_the_content();
+                preg_match("/\<img.+src\=(?:\"|\')(.+?)(?:\"|\')(?:.+?)\>/", $content, $image);
+                $image = str_replace('amp;','',$image);
+                preg_match("/<\/br>(.+)/", $content, $contentFormat);
                 //Get content without caption
                 $results['data'][] = [
                     'title' => $getTitle,
                     'slug' => get_post_field('post_name', get_the_ID()),
-                    'content' => get_the_content(),
-                    'link' => get_post_meta(get_the_ID(), 'post_summary', true),
-                    'urlToImage' => get_post_meta(get_the_ID(), 'post_images_icon', true),
-                    'date' => get_the_date('Y/m/d'),
+                    'content' =>  (isset($contentFormat[1]))?$contentFormat[1]:$content,
+                    'urlToImage' => (isset($image[1]))?$image[1]:"",
+                    'date' => get_the_date('Y/m/d H:i:s'),
                 ];
             }
 
@@ -88,7 +117,6 @@ class PostController extends WP_REST_Controller
             return new WP_Error('no_posts', __('No post found'), array('status' => 404));
         }
         return new WP_REST_Response($results, 200);
-        
     }
     public function getPost($request)
     {
