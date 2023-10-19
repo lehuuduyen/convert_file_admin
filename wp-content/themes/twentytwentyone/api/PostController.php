@@ -84,14 +84,19 @@ class PostController extends WP_REST_Controller
 
 
             
-            
+        $page = $_GET['page'];
         $results = [];
         $args = array(
             'post_type' => POST_TYPE_FEED,
             'post_status' => array('publish'),
-            'posts_per_page'=>5
+            'posts_per_page' => 10, 
+            'paged' => $page,
+            'orderby'   => array(
+                'date' =>'DESC',
+               )
         );
-
+       
+        
         
         $posts = new WP_Query($args);
         
