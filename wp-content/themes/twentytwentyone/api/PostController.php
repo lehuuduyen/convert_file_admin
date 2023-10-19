@@ -89,13 +89,16 @@ class PostController extends WP_REST_Controller
         $args = array(
             'post_type' => POST_TYPE_FEED,
             'post_status' => array('publish'),
+            'posts_per_page'=>5
         );
 
         
         $posts = new WP_Query($args);
+        
         if ($posts->have_posts()) {
             $results['code'] = 'success';
             while ($posts->have_posts()) {
+         
                 $posts->the_post();
                 $getTitle =  get_the_title();
                 $content = get_the_content();
@@ -106,7 +109,7 @@ class PostController extends WP_REST_Controller
                 $meeting_time =strtotime('+7 hours', time()) - strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i:s')));
                 $hours = floor($meeting_time / 3600); // Tính số giờ
                 if($hours > 0){
-                    $hours = $hours .":";
+                    $hours = $hours ." giờ ";
                 }else{
                     $hours ="";
                 }
@@ -116,7 +119,7 @@ class PostController extends WP_REST_Controller
                     'slug' => get_post_field('post_name', get_the_ID()),
                     'content' =>  (isset($contentFormat[1]))?$contentFormat[1]:$content,
                     'urlToImage' => (isset($image[1]))?$image[1]:"",
-                    'date' => $hours .$minutes ."mins ago",
+                    'date' => $hours .$minutes ." phút trước",
                 ];
             }
 
