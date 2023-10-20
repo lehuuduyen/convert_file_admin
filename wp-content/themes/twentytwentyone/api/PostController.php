@@ -101,9 +101,19 @@ class PostController extends WP_REST_Controller
                     $xpath_resultset =  $xpath->query("//div[@class='sidebar-1']");
 
                     $htmlString = $doc->saveHTML($xpath_resultset->item(0));
-                        $pattern = '/<img[^>]+data-src="([^"]+)"[^>]*>/i';
-                    $htmlString = preg_replace($pattern, '<img src="$1">', $htmlString);
+                 
+                    
+                    if (strlen($htmlString) < 200) {
+                        wp_update_post(array(
+                            'ID'    => get_the_ID(),
+                            'post_status'   =>  'draft'
+                        ));
+                        return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+                    }
 
+
+                    $pattern = '/<img[^>]+data-src="([^"]+)"[^>]*>/i';
+                    $htmlString = preg_replace($pattern, '<img src="$1">', $htmlString);
 
                     // $title = $xpath->evaluate('//div[@class="sidebar-1"]//h1[@class="title-detail"]')[0]->textContent;
                     // $titles = $xpath->evaluate('//div[@class="sidebar-1"]');
@@ -125,7 +135,7 @@ class PostController extends WP_REST_Controller
                     'slug' => get_post_field('post_name', get_the_ID()),
                     'content' => $htmlString,
                     'urlToImage' => get_post_meta(get_the_ID(), 'wprss_item_permalink', true),
-                    'date' => date('d/m/Y H:i',strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i')))),
+                    'date' => date('d/m/Y H:i', strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i')))),
                 ];
             }
 
@@ -138,20 +148,20 @@ class PostController extends WP_REST_Controller
 
     public function callNews($request)
     {
-       
+
 
         $page = $_GET['page'];
         $results = [];
-       
+
         $args = array(
             'post_type' => POST_TYPE_FEED,
             'post_status' => array('publish'),
-            'posts_per_page' =>-1,
+            'posts_per_page' => -1,
         );
         $postsTotal = new WP_Query($args);
 
-        $results['total']= $postsTotal->found_posts;
-       
+        $results['total'] = $postsTotal->found_posts;
+
         $args = array(
             'post_type' => POST_TYPE_FEED,
             'post_status' => array('publish'),
@@ -197,8 +207,8 @@ class PostController extends WP_REST_Controller
         } else {
             return new WP_Error('no_posts', __('No post found'), array('status' => 404));
         }
-      
-        
+
+
         return new WP_REST_Response($results, 200);
     }
     public function callNewsPopular($request)
