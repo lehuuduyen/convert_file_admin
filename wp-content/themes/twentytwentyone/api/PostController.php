@@ -11,6 +11,12 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'callNews')
             ),
         ));
+        register_rest_route($this->nameSpace, 'call-news-popular', array(
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'callNewsPopular')
+            ),
+        ));
         register_rest_route($this->nameSpace, 'format-file', array(
             array(
                 'methods' => 'POST',
@@ -29,102 +35,252 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getPost')
             ),
         ));
+        register_rest_route($this->nameSpace, 'post-popular', array(
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'getPostPopular')
+            ),
+        ));
         register_rest_route($this->nameSpace, 'post/(?P<post_slug>[a-zA-Z0-9-_]+)', array(
             array(
                 'methods' => 'GET',
                 'callback' => array($this, 'getPostDetail')
             ),
         ));
+        register_rest_route($this->nameSpace, 'news/(?P<post_slug>[a-zA-Z0-9-_]+)', array(
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'getNewsDetail')
+            ),
+        ));
     }
-    public function callNews($request)
+    public function getNewsDetail($request)
     {
-        // try {
-        //     $url = 'https://vnexpress.net/chinh-phu-de-xuat-giao-them-hon-2-500-ty-cho-bo-nganh-va-dia-phuong-4665737.html';
-        //     $args = array(
-        //         'timeout'     => 5,
-        //         'redirection' => 5,
-        //         'httpversion' => '1.0',
-        //         'user-agent'  => 'WordPress/1',
-        //         'blocking'    => true,
-        //         'headers'     => array(),
-        //         'cookies'     => array(),
-        //         'body'        => null,
-        //         'compress'    => false,
-        //         'decompress'  => true,
-        //         'sslverify'   => true,
-        //         'stream'      => false,
-        //         'filename'    => null
-        //     );
-
-        //     $response = wp_remote_get($url, $args);
-        //     $htmlString = (string) $response['body'];
-        //     libxml_use_internal_errors(true);
-        //     $doc = new DOMDocument();
-        //     $doc->loadHTML($htmlString);
-        //     $xpath = new DOMXPath($doc);
-            
-        //     $title = $xpath->evaluate('//div[@class="sidebar-1"]//h1[@class="title-detail"]')[0]->textContent;
-        //     $prices = $xpath->evaluate('//ol[@class="row"]//li//article//div[@class="product_price"]//p[@class="price_color"]');
-         
-        //     echo $title ;
-            
-            
-        // } catch (\Throwable $th) {
-        //     echo '<pre>';
-        //     print_r($th);
-        //     die;
-            
-        // }
-        // // $data = json_decode( wp_remote_retrieve_body( $response ) );
-        // // return new WP_REST_Response($data, 200);
-
-
-        // die;
-
-
-
-            
-        $page = $_GET['page'];
         $results = [];
+        $htmlString = "";
         $args = array(
             'post_type' => POST_TYPE_FEED,
             'post_status' => array('publish'),
-            'posts_per_page' => 10, 
-            'paged' => $page,
-            'orderby'   => array(
-                'date' =>'DESC',
-               )
+            'name' => $request['post_slug']
+
         );
-       
-        
-        
         $posts = new WP_Query($args);
-        
         if ($posts->have_posts()) {
             $results['code'] = 'success';
             while ($posts->have_posts()) {
-         
+
+                $posts->the_post();
+
+                $getTitle =  get_the_title();
+                try {
+                    $url = get_post_meta(get_the_ID(), 'wprss_item_permalink', true);
+                    $args = array(
+                        'timeout'     => 5,
+                        'redirection' => 5,
+                        'httpversion' => '1.0',
+                        'user-agent'  => 'WordPress/1',
+                        'blocking'    => true,
+                        'headers'     => array(),
+                        'cookies'     => array(),
+                        'body'        => null,
+                        'compress'    => false,
+                        'decompress'  => true,
+                        'sslverify'   => true,
+                        'stream'      => false,
+                        'filename'    => null
+                    );
+
+                    $response = wp_remote_get($url, $args);
+                    $htmlString = (string) $response['body'];
+
+
+                    libxml_use_internal_errors(true);
+                    $doc = new DOMDocument();
+                    $doc->loadHTML($htmlString);
+                    $xpath = new DOMXPath($doc);
+                    $xpath_resultset =  $xpath->query("//div[@class='sidebar-1']");
+
+                    $htmlString = $doc->saveHTML($xpath_resultset->item(0));
+                        $pattern = '/<img[^>]+data-src="([^"]+)"[^>]*>/i';
+                    $htmlString = preg_replace($pattern, '<img src="$1">', $htmlString);
+
+
+                    // $title = $xpath->evaluate('//div[@class="sidebar-1"]//h1[@class="title-detail"]')[0]->textContent;
+                    // $titles = $xpath->evaluate('//div[@class="sidebar-1"]');
+                    // // $prices = $xpath->evaluate('//ol[@class="row"]//li//article//div[@class="product_price"]//p[@class="price_color"]');
+
+                    // echo '<pre>';
+                    // print_r($titles[0]->textContent);
+                    // die;
+
+
+                } catch (\Throwable $th) {
+                }
+
+
+
+                //Get content without caption
+                $results['data'] = [
+                    'title' => $getTitle,
+                    'slug' => get_post_field('post_name', get_the_ID()),
+                    'content' => $htmlString,
+                    'urlToImage' => get_post_meta(get_the_ID(), 'wprss_item_permalink', true),
+                    'date' => date('d/m/Y H:i',strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i')))),
+                ];
+            }
+
+            wp_reset_postdata();
+        } else {
+            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+        }
+        return new WP_REST_Response($results, 200);
+    }
+
+    public function callNews($request)
+    {
+       
+
+        $page = $_GET['page'];
+        $results = [];
+       
+        $args = array(
+            'post_type' => POST_TYPE_FEED,
+            'post_status' => array('publish'),
+            'posts_per_page' =>-1,
+        );
+        $postsTotal = new WP_Query($args);
+
+        $results['total']= $postsTotal->found_posts;
+       
+        $args = array(
+            'post_type' => POST_TYPE_FEED,
+            'post_status' => array('publish'),
+            'posts_per_page' => 5,
+            'paged' => $page,
+            'orderby'   => array(
+                'date' => 'DESC',
+            )
+        );
+
+        $posts = new WP_Query($args);
+
+        if ($posts->have_posts()) {
+            $results['code'] = 'success';
+            while ($posts->have_posts()) {
+
                 $posts->the_post();
                 $getTitle =  get_the_title();
                 $content = get_the_content();
                 preg_match("/\<img.+src\=(?:\"|\')(.+?)(?:\"|\')(?:.+?)\>/", $content, $image);
-                $image = str_replace('amp;','',$image);
+                $image = str_replace('amp;', '', $image);
                 preg_match("/<\/br>(.+)/", $content, $contentFormat);
                 //Get content without caption
-                $meeting_time =strtotime('+7 hours', time()) - strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i:s')));
+                $meeting_time = strtotime('+7 hours', time()) - strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i:s')));
                 $hours = floor($meeting_time / 3600); // Tính số giờ
-                if($hours > 0){
-                    $hours = $hours ." giờ ";
-                }else{
-                    $hours ="";
+                if ($hours > 0) {
+                    $hours = "Hơn 1 giờ";
+                } else {
+                    $hours = "";
                 }
                 $minutes = floor(($meeting_time % 3600) / 60); // Tính số phút
                 $results['data'][] = [
                     'title' => $getTitle,
                     'slug' => get_post_field('post_name', get_the_ID()),
-                    'content' =>  (isset($contentFormat[1]))?$contentFormat[1]:$content,
-                    'urlToImage' => (isset($image[1]))?$image[1]:"",
-                    'date' => $hours .$minutes ." phút trước",
+                    'type' => get_post_field('post_type', get_the_ID()),
+                    'content' =>  get_post_field('post_excerpt', get_the_ID()),
+                    'urlToImage' => (isset($image[1])) ? $image[1] : "",
+                    'date' => ($hours) ? $hours : $minutes . " phút trước",
+                ];
+            }
+
+            wp_reset_postdata();
+        } else {
+            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+        }
+      
+        
+        return new WP_REST_Response($results, 200);
+    }
+    public function callNewsPopular($request)
+    {
+
+
+
+
+        $results = [];
+        $args = array(
+            'post_type' => POST_TYPE_FEED,
+            'post_status' => array('publish'),
+            'posts_per_page' => 3,
+            'orderby'        => 'rand',
+        );
+
+
+
+        $posts = new WP_Query($args);
+
+        if ($posts->have_posts()) {
+            $results['code'] = 'success';
+            while ($posts->have_posts()) {
+
+                $posts->the_post();
+                $getTitle =  get_the_title();
+                $content = get_the_content();
+                preg_match("/\<img.+src\=(?:\"|\')(.+?)(?:\"|\')(?:.+?)\>/", $content, $image);
+                $image = str_replace('amp;', '', $image);
+                preg_match("/<\/br>(.+)/", $content, $contentFormat);
+                //Get content without caption
+                $meeting_time = strtotime('+7 hours', time()) - strtotime('+7 hours', strtotime(get_the_date('Y/m/d H:i:s')));
+                $hours = floor($meeting_time / 3600); // Tính số giờ
+                if ($hours > 0) {
+                    $hours = "Hơn 1 giờ";
+                } else {
+                    $hours = "";
+                }
+                $minutes = floor(($meeting_time % 3600) / 60); // Tính số phút
+                $results['data'][] = [
+                    'title' => $getTitle,
+                    'slug' => get_post_field('post_name', get_the_ID()),
+                    'type' => get_post_field('post_type', get_the_ID()),
+                    'content' => (isset($contentFormat[1])) ? $contentFormat[1] : $content,
+                    'urlToImage' => (isset($image[1])) ? $image[1] : "",
+                    'date' => ($hours) ? $hours : $minutes . " phút trước",
+                ];
+            }
+
+            wp_reset_postdata();
+        } else {
+            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+        }
+        return new WP_REST_Response($results, 200);
+    }
+    public function getPostPopular($request)
+    {
+        $results = [];
+        $args = array(
+            'post_type' => POST_TYPE,
+            'post_status' => array('publish'),
+            'posts_per_page' => 3,
+            'orderby'        => 'rand',
+
+
+        );
+        $posts = new WP_Query($args);
+        if ($posts->have_posts()) {
+            $results['code'] = 'success';
+            while ($posts->have_posts()) {
+                $posts->the_post();
+                $getTitle =  get_the_title();
+
+
+                //Get content without caption
+                $results['data'][] = [
+                    'title' => $getTitle,
+                    'slug' => get_post_field('post_name', get_the_ID()),
+                    'content' => get_the_content(),
+                    'short_description' => get_post_meta(get_the_ID(), 'post_summary', true),
+                    'urlToImage' => get_post_meta(get_the_ID(), 'post_images_icon', true),
+                    'date' => get_the_date('Y/m/d'),
                 ];
             }
 
