@@ -11,6 +11,12 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'callNews')
             ),
         ));
+        register_rest_route($this->nameSpace, 'get/(?P<image>[a-zA-Z0-9-_]+)', array(
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'getImage')
+            ),
+        ));
         register_rest_route($this->nameSpace, 'call-news-popular', array(
             array(
                 'methods' => 'GET',
@@ -53,6 +59,11 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getNewsDetail')
             ),
         ));
+    }
+    public function getImage($request){
+        header('Content-Type: image/png' );
+        readfile("http://convertadmin.dev.com/file/1696993161_624_332328344_860277181742771_7164589319717715951_n.png");
+  
     }
     public function getNewsDetail($request)
     {
