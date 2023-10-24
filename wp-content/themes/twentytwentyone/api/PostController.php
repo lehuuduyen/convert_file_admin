@@ -63,8 +63,7 @@ class PostController extends WP_REST_Controller
     public function getImage($request){
         $type = $request['type'];
         $file = $request['image'];
-        
-        header("Content-Disposition: attachment; filename=$file.png");
+        header("Content-Disposition: attachment; filename=$file.$type");
         header('Content-Type: image/'.$type );
         readfile(get_site_url()."/file/$file.".$type);
   
@@ -387,11 +386,13 @@ class PostController extends WP_REST_Controller
    
     public function getSize($image)
     {
+       
+        
         return number_format((int)filesize($image) / 1024, 2, '.', '') . 'KB';
     }
     public function getObjectSize($image, $imageName)
     {
-        $result['oldSize'] = $this->getSize($image);
+        $result['oldSize'] = number_format((int)$_FILES['file']['size'] / 1024, 2, '.', '') . 'KB' ;
         // $result['newSize'] = $this->getSize('file/compress_' . $imageName);
         $result['newSize'] = $this->getSize($imageName);
         return $result;
@@ -453,7 +454,7 @@ class PostController extends WP_REST_Controller
                 throw new \ErrorException($message, 0, $severity, $file, $line);
             });
             $file = $_FILES["file"];
-            $file['name'] = time() . "_" . rand(1, 9999) . "_" . $file['name'];
+            $file['name'] = time() . "_" . rand(1, 9999) . "_" . str_replace(['(',')',' '],'',$file['name']);
             $tempFilePath = $file['tmp_name'];
             $to = $_POST['to'];
             $targetDirectory = './file/';
@@ -462,6 +463,8 @@ class PostController extends WP_REST_Controller
             if (!is_dir($targetDirectory)) {
                 mkdir($targetDirectory, 0777, true);
             }
+            
+            
             if (mime_content_type($tempFilePath) == "image/jpeg") {
                 switch ($to) {
                     case "png":
@@ -502,7 +505,7 @@ class PostController extends WP_REST_Controller
                         break;
                     case 'pdf':
                         require('fpdf/fpdf.php');
-                        $output = str_replace([".jpg", ".jpeg"], "", $file['name']) . ".pdf";
+                        $output = str_replace([".jpg", ".png",".jpeg"], "", $file['name']) . ".pdf";
 
                         $jpegFilePath = $tempFilePath;
                         $pdfFilePath = $currentFloderDomain . $output;
@@ -519,18 +522,15 @@ class PostController extends WP_REST_Controller
                         echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output,'pdf'), 'data' => json_encode($result)));
                         break;
                     case 'jpg':
-                        $outputJpg = $currentFloderDomain . str_replace(".jpeg", "", $file['name']) . ".jpg";
+                        $outputJpg = $currentFloderDomain . str_replace([".png", ".jpeg"], "", $file['name']) . ".jpg";
                         rename($tempFilePath, $outputJpg);
-
                         $result = $this->getObjectSize($tempFilePath, $outputJpg);
 
                         echo json_encode(array("success" => true, "message" => $this->urlPathFile( $outputJpg,'jpg')));
                         break;
                     case 'jpeg':
-                        $outputJpeg = $currentFloderDomain . str_replace(".jpg", "", $file['name']) . ".jpeg";
+                        $outputJpeg = $currentFloderDomain . str_replace([".png", ".jpg"], "", $file['name']) . ".jpeg";
                         rename($tempFilePath, $outputJpeg);
-
-
                         $result = $this->getObjectSize($tempFilePath, $outputJpeg);
 
                         echo json_encode(array("success" => true, "message" => $this->urlPathFile( $outputJpeg,'jpeg'), 'data' => json_encode($result)));
@@ -559,6 +559,8 @@ class PostController extends WP_REST_Controller
 
                 switch ($to) {
                     case "jpeg":
+                     
+                        
                         $output = str_replace(".png", "", $file['name']) . ".jpeg";
                         $pngImage = imagecreatefrompng($tempFilePath);
                         // Create a new blank PNG image
@@ -579,6 +581,7 @@ class PostController extends WP_REST_Controller
                         echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output,'jpeg'), 'data' => json_encode($result)));
                         break;
                     case "jpg":
+                        
                         $output = str_replace(".png", "", $file['name']) . ".jpg";
                         $pngImage = imagecreatefrompng($tempFilePath);
                         // Create a new blank PNG image
