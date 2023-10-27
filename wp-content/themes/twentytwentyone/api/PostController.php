@@ -117,7 +117,7 @@ class PostController extends WP_REST_Controller
                     $htmlString = $doc->saveHTML($xpath_resultset->item(0));
                  
                     
-                    if (strlen($htmlString) < 200) {
+                    if (strlen($htmlString) < 200 || str_contains($htmlString,'alt="VnExpress"')) {
                         wp_update_post(array(
                             'ID'    => get_the_ID(),
                             'post_status'   =>  'draft'
