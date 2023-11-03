@@ -60,13 +60,13 @@ class PostController extends WP_REST_Controller
             ),
         ));
     }
-    public function getImage($request){
+    public function getImage($request)
+    {
         $type = $request['type'];
         $file = $request['image'];
         // header("Content-Disposition: attachment; filename=$file.$type");
-        header('Content-Type: image/'.$type );
-        readfile(get_site_url()."/file/$file.".$type);
-  
+        header('Content-Type: image/' . $type);
+        readfile(get_site_url() . "/file/$file." . $type);
     }
     public function getNewsDetail($request)
     {
@@ -115,9 +115,9 @@ class PostController extends WP_REST_Controller
                     $xpath_resultset =  $xpath->query("//div[@class='sidebar-1']");
 
                     $htmlString = $doc->saveHTML($xpath_resultset->item(0));
-                 
-                    
-                    if (strlen($htmlString) < 200 || str_contains($htmlString,'alt="VnExpress"')) {
+
+
+                    if (strlen($htmlString) < 200 || str_contains($htmlString, 'alt="VnExpress"')) {
                         wp_update_post(array(
                             'ID'    => get_the_ID(),
                             'post_status'   =>  'draft'
@@ -383,16 +383,16 @@ class PostController extends WP_REST_Controller
         }
         return new WP_REST_Response($results, 200);
     }
-   
+
     public function getSize($image)
     {
-       
-        
+
+
         return number_format((int)filesize($image) / 1024, 2, '.', '') . 'KB';
     }
     public function getObjectSize($image, $imageName)
     {
-        $result['oldSize'] = number_format((int)$_FILES['file']['size'] / 1024, 2, '.', '') . 'KB' ;
+        $result['oldSize'] = number_format((int)$_FILES['file']['size'] / 1024, 2, '.', '') . 'KB';
         // $result['newSize'] = $this->getSize('file/compress_' . $imageName);
         $result['newSize'] = $this->getSize($imageName);
         return $result;
@@ -420,11 +420,12 @@ class PostController extends WP_REST_Controller
 
                 $imageLayer = imagecreatefrompng($image);
             }
-
+           
             $compressedImage = imagejpeg($imageLayer, 'file/compress_' . $imageName, $outputQuality);
-
+            
 
             if ($compressedImage) {
+
                 $result['newSize'] = $this->getSize('file/compress_' . $imageName);
                 $result['percent'] = '-' . number_format(100 - ((int)$result['newSize'] * 100 / (int)$result['oldSize']), 2, '.', '') . "%";
                 return $result;
@@ -437,9 +438,9 @@ class PostController extends WP_REST_Controller
             throw $th;
         }
     }
-    public function urlPathFile($fileName,$type)
+    public function urlPathFile($fileName, $type)
     {
-        $fileName = explode('.',$fileName)[0];
+        $fileName = explode('.', $fileName)[0];
         if (isset($_SERVER['HTTPS'])) {
             $protocol = ($_SERVER['HTTPS'] && $_SERVER['HTTPS'] != "off") ? "https" : "http";
         } else {
@@ -454,7 +455,7 @@ class PostController extends WP_REST_Controller
                 throw new \ErrorException($message, 0, $severity, $file, $line);
             });
             $file = $_FILES["file"];
-            $file['name'] = time() . "_" . rand(1, 9999) . "_" . str_replace(['(',')',' ',],'',$file['name']);
+            $file['name'] = time() . "_" . rand(1, 9999) . "_" . str_replace(['(', ')', ' ',], '', $file['name']);
             $lastDot = strrpos($file['name'], ".");
             $file['name'] = str_replace(".", "", substr($file['name'], 0, $lastDot)) . substr($file['name'], $lastDot);
             $tempFilePath = $file['tmp_name'];
@@ -465,6 +466,9 @@ class PostController extends WP_REST_Controller
             if (!is_dir($targetDirectory)) {
                 mkdir($targetDirectory, 0777, true);
             }
+
+            
+            
             if (mime_content_type($tempFilePath) == "image/jpeg") {
                 switch ($to) {
                     case "png":
@@ -484,7 +488,7 @@ class PostController extends WP_REST_Controller
                         imagedestroy($jpegImage);
                         imagedestroy($pngImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( 'file/'.$output,'png'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'png'), 'data' => json_encode($result)));
                         break;
                     case 'gif':
                         $outputGif = str_replace([".jpg", ".jpeg"], "", $file['name']) . ".gif";
@@ -501,11 +505,11 @@ class PostController extends WP_REST_Controller
                         imagedestroy($gifImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $outputGif);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( 'file/'.$outputGif,'gif'), 'data' => json_encode($result)));                    // echo $gifFilePath;
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $outputGif, 'gif'), 'data' => json_encode($result)));                    // echo $gifFilePath;
                         break;
                     case 'pdf':
                         require('fpdf/fpdf.php');
-                        $output = str_replace([".jpg", ".png",".jpeg"], "", $file['name']) . ".pdf";
+                        $output = str_replace([".jpg", ".png", ".jpeg"], "", $file['name']) . ".pdf";
 
                         $jpegFilePath = $tempFilePath;
                         $pdfFilePath = $currentFloderDomain . $output;
@@ -519,22 +523,22 @@ class PostController extends WP_REST_Controller
                         $pdf->Output($pdfFilePath, 'F');
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( 'file/'.$output,'pdf'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'pdf'), 'data' => json_encode($result)));
                         break;
                     case 'jpg':
                         $outputJpg = $currentFloderDomain . str_replace([".png", ".jpeg"], "", $file['name']) . ".jpg";
                         rename($tempFilePath, $outputJpg);
                         $result = $this->getObjectSize($tempFilePath, $outputJpg);
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $outputJpg,'jpg'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile($outputJpg, 'jpg'), 'data' => json_encode($result)));
                         break;
                     case 'jpeg':
                         $outputJpeg = $currentFloderDomain . str_replace([".png", ".jpg"], "", $file['name']) . ".jpeg";
                         rename($tempFilePath, $outputJpeg);
-                        
+
                         $result = $this->getObjectSize($tempFilePath, $outputJpeg);
-                        
-                        
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $outputJpeg,'jpeg'), 'data' => json_encode($result)));
+
+
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile($outputJpeg, 'jpeg'), 'data' => json_encode($result)));
                         break;
                     case "ico":
                         require('php-ico/class-php-ico.php');
@@ -544,14 +548,15 @@ class PostController extends WP_REST_Controller
                         $ico_lib->save_ico($tempIcoFilePath);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( 'file/'.$output,'ico'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'ico'), 'data' => json_encode($result)));
                         break;
                     case "tinyPNG":
                         $sourceImg = $tempFilePath;
                         $fileName = $file['name'];
-
+                        $arr = explode('.', $file['name']);
+                        
                         $d = $this->resizeImage($sourceImg, $fileName, 50);
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( 'file/compress_' . $fileName,'png'), 'data' => json_encode($d)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/compress_' . $fileName, $arr[count($arr) - 1]), 'data' => json_encode($d)));
                         break;
                     default:
                         echo json_encode(array("error" => "Failed to load file."));
@@ -560,8 +565,8 @@ class PostController extends WP_REST_Controller
 
                 switch ($to) {
                     case "jpeg":
-                     
-                        
+
+
                         $output = str_replace(".png", "", $file['name']) . ".jpeg";
                         $pngImage = imagecreatefrompng($tempFilePath);
                         // Create a new blank PNG image
@@ -579,10 +584,10 @@ class PostController extends WP_REST_Controller
                         imagedestroy($jpegImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' .  $output,'jpeg'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' .  $output, 'jpeg'), 'data' => json_encode($result)));
                         break;
                     case "jpg":
-                        
+
                         $output = str_replace(".png", "", $file['name']) . ".jpg";
                         $pngImage = imagecreatefrompng($tempFilePath);
                         // Create a new blank PNG image
@@ -600,7 +605,7 @@ class PostController extends WP_REST_Controller
                         imagedestroy($jpegImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( 'file/' . $output,'jpg'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'jpg'), 'data' => json_encode($result)));
                         break;
                     case 'pdf':
                         require('fpdf/fpdf.php');
@@ -617,19 +622,19 @@ class PostController extends WP_REST_Controller
                         $pdf->Output($pdfFilePath, 'F');
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/'. $output,'pdf'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'pdf'), 'data' => json_encode($result)));
                         break;
-                    // case "ico":
-                    //     require('php-ico/class-php-ico.php');
-                    //     $output = str_replace([".png"], "", $file['name']) . ".ico";
-                    //     $tempIcoFilePath =  $currentFloderDomain . $output;
-                    //     $ico_lib = new PHP_ICO($tempFilePath);
-                    //     $ico_lib->save_ico($tempIcoFilePath);
-                        
-                    //     $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
-                        
-                    //     echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output,'ico'), 'data' => json_encode($result)));
-                    //     break;
+                        // case "ico":
+                        //     require('php-ico/class-php-ico.php');
+                        //     $output = str_replace([".png"], "", $file['name']) . ".ico";
+                        //     $tempIcoFilePath =  $currentFloderDomain . $output;
+                        //     $ico_lib = new PHP_ICO($tempFilePath);
+                        //     $ico_lib->save_ico($tempIcoFilePath);
+
+                        //     $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
+
+                        //     echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output,'ico'), 'data' => json_encode($result)));
+                        //     break;
                     case "tinyPNG":
                         $sourceImg = $tempFilePath;
                         $fileName = $file['name'];
@@ -637,11 +642,21 @@ class PostController extends WP_REST_Controller
                         $d = $this->resizeImage($sourceImg, $fileName, 50);
 
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( 'file/compress_' . $fileName,'png'), 'data' => json_encode($d)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/compress_' . $fileName, 'png'), 'data' => json_encode($d)));
                         break;
                     default:
                         echo json_encode(array("error" => "Failed to load file."));
                 }
+            } else {
+                $imageInfo = getimagesize($tempFilePath);
+                move_uploaded_file($tempFilePath, 'file/' . $file['name']);
+
+                $result['oldSize'] = $this->getSize($tempFilePath);
+                $result['mime'] = $imageInfo['mime'];
+
+                $result['newSize'] =  $result['oldSize'];
+                $result['percent'] = "-0%";
+                echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $file['name'], $arr[count($arr) - 1]), 'data' => json_encode($result)));
             }
         } catch (Exception $e) {
             echo '<pre>';
