@@ -547,7 +547,6 @@ class PostController extends WP_REST_Controller
                         $ico_lib = new PHP_ICO($tempFilePath);
                         $ico_lib->save_ico($tempIcoFilePath);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
-
                         echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'ico'), 'data' => json_encode($result)));
                         break;
                     case "tinyPNG":
