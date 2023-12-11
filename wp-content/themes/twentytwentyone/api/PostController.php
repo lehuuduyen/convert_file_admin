@@ -17,6 +17,12 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getImage')
             ),
         ));
+        register_rest_route($this->nameSpace, 'get/filezip/(?P<image>[a-zA-Z0-9-_]+)', array(
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'getFileZip')
+            ),
+        ));
         register_rest_route($this->nameSpace, 'call-news-popular', array(
             array(
                 'methods' => 'GET',
@@ -67,6 +73,13 @@ class PostController extends WP_REST_Controller
         // header("Content-Disposition: attachment; filename=$file.$type");
         header('Content-Type: image/' . $type);
         readfile(get_site_url() . "/file/$file." . $type);
+    }
+    public function getFileZip($request)
+    {
+        $file = $request['image'];
+        // header("Content-Disposition: attachment; filename=$file.$type");
+        header('Content-Type: application/zip');
+        readfile(get_site_url() . "/file/$file.zip");
     }
     public function getNewsDetail($request)
     {
@@ -420,9 +433,9 @@ class PostController extends WP_REST_Controller
 
                 $imageLayer = imagecreatefrompng($image);
             }
-           
+
             $compressedImage = imagejpeg($imageLayer, 'file/compress_' . $imageName, $outputQuality);
-            
+
 
             if ($compressedImage) {
 
@@ -467,8 +480,8 @@ class PostController extends WP_REST_Controller
                 mkdir($targetDirectory, 0777, true);
             }
 
-            
-            
+
+
             if (mime_content_type($tempFilePath) == "image/jpeg") {
                 switch ($to) {
                     case "png":
@@ -553,13 +566,25 @@ class PostController extends WP_REST_Controller
                         $sourceImg = $tempFilePath;
                         $fileName = $file['name'];
                         $arr = explode('.', $file['name']);
-                        
+
                         $d = $this->resizeImage($sourceImg, $fileName, 50);
                         echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/compress_' . $fileName, $arr[count($arr) - 1]), 'data' => json_encode($d)));
                         break;
                     default:
                         echo json_encode(array("error" => "Failed to load file."));
                 }
+            } else if (mime_content_type($tempFilePath) == 'video/mp4') {
+                $folder = "file/" . str_replace('.mp4', '', $file['name']);
+                if (!is_dir($folder)) {
+                    mkdir($folder, 0777, true);
+                }
+                move_uploaded_file($tempFilePath, 'file/' . $file['name']);
+
+                shell_exec("ffmpeg -i file/" . $file['name'] . " -g 60 -hls_time 2 " . $folder . "/out.m3u8");
+                $this->zipFile($folder, 'file/'.str_replace('.mp4', '.zip', $file['name']));
+                // $this->zipFile('file/1702264664_6648_video', 'file/abc.zip');
+                echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/'.str_replace('.mp4', '', $file['name']), 'zip'), 'data' => []));
+
             } else if (mime_content_type($tempFilePath) == "image/png") {
 
                 switch ($to) {
@@ -649,6 +674,7 @@ class PostController extends WP_REST_Controller
             } else {
                 $imageInfo = getimagesize($tempFilePath);
                 move_uploaded_file($tempFilePath, 'file/' . $file['name']);
+                $arr = explode('.', $file['name']);
 
                 $result['oldSize'] = $this->getSize($tempFilePath);
                 $result['mime'] = $imageInfo['mime'];
@@ -667,7 +693,31 @@ class PostController extends WP_REST_Controller
             restore_error_handler();
         }
     }
+    public function zipFile($rootPath,$nameZip)
+    {
+        // Enter the name of directory 
+        $pathdir = $rootPath;
+       
+        // Enter the name to creating zipped directory 
+        $zipcreated =$nameZip;
+
+        // Create new zip class 
+        $zip = new ZipArchive;
+        if ($zip->open($zipcreated, ZipArchive::CREATE) === TRUE) {
+
+            // Store the path into the variable 
+            $dir = opendir($pathdir);
+
+            while ($file = readdir($dir)) {
+                if (is_file($pathdir .'/'. $file)) {
+                    $zip->addFile($pathdir.'/'.$file, $file);
+                }
+            }
+            $zip->close();
+        }
+    }
 }
+
 
 add_action('rest_api_init', function () {
     $shareController = new PostController();
