@@ -435,19 +435,19 @@ class PostController extends WP_REST_Controller
             }
 
             $compressedImage = imagejpeg($imageLayer, 'file/compress_' . $imageName, $outputQuality);
-
+            
+            
 
             if ($compressedImage) {
 
                 $result['newSize'] = $this->getSize('file/compress_' . $imageName);
                 $result['percent'] = '-' . number_format(100 - ((int)$result['newSize'] * 100 / (int)$result['oldSize']), 2, '.', '') . "%";
                 return $result;
-                exit;
             } else {
                 return 'An error occured!';
-                exit;
             }
         } catch (\Throwable $th) {
+            
             throw $th;
         }
     }
@@ -464,9 +464,11 @@ class PostController extends WP_REST_Controller
     public function formatFile($request)
     {
         try {
+
             set_error_handler(function ($severity, $message, $file, $line) {
                 throw new \ErrorException($message, 0, $severity, $file, $line);
             });
+            
             $file = $_FILES["file"];
             $file['name'] = time() . "_" . rand(1, 9999) . "_" . str_replace(['(', ')', ' ',], '', $file['name']);
             $lastDot = strrpos($file['name'], ".");
@@ -583,7 +585,10 @@ class PostController extends WP_REST_Controller
                 shell_exec("ffmpeg -i file/" . $file['name'] . " -g 60 -hls_time 2 " . $folder . "/out.m3u8");
                 $this->zipFile($folder, 'file/'.str_replace('.mp4', '.zip', $file['name']));
                 // $this->zipFile('file/1702264664_6648_video', 'file/abc.zip');
-                echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/'.str_replace('.mp4', '', $file['name']), 'zip'), 'data' => []));
+                $result['oldSize'] = "";
+                $result['newSize'] =  "";
+                $result['percent'] = "";
+                echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/'.str_replace('.mp4', '', $file['name']), 'zip'), 'data' => json_encode($result)));
 
             } else if (mime_content_type($tempFilePath) == "image/png") {
 
@@ -660,12 +665,10 @@ class PostController extends WP_REST_Controller
                         //     echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output,'ico'), 'data' => json_encode($result)));
                         //     break;
                     case "tinyPNG":
+
                         $sourceImg = $tempFilePath;
                         $fileName = $file['name'];
-
                         $d = $this->resizeImage($sourceImg, $fileName, 50);
-
-
                         echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/compress_' . $fileName, 'png'), 'data' => json_encode($d)));
                         break;
                     default:
@@ -683,9 +686,9 @@ class PostController extends WP_REST_Controller
                 $result['percent'] = "-0%";
                 echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $file['name'], $arr[count($arr) - 1]), 'data' => json_encode($result)));
             }
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             echo '<pre>';
-            print_r($e);
+            print_r($e->getMessage());
             die;
 
             echo json_encode(array("error" => "Failed to load convert. Please try again."));
