@@ -11,7 +11,7 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'callNews')
             ),
         ));
-        register_rest_route($this->nameSpace, 'get/file/(?P<image>[a-zA-Z0-9-_]+)', array(
+        register_rest_route($this->nameSpace, 'get/file', array(
             array(
                 'methods' => 'GET',
                 'callback' => array($this, 'getImage')
@@ -35,7 +35,7 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'formatFile')
             ),
         ));
-        register_rest_route($this->nameSpace, 'posts-category/(?P<category>[a-zA-Z0-9-_]+)', array(
+        register_rest_route($this->nameSpace, 'postscategory/(?P<category>[a-zA-Z0-9-_]+)', array(
             array(
                 'methods' => 'GET',
                 'callback' => array($this, 'getCategory')
@@ -47,7 +47,7 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getPost')
             ),
         ));
-        register_rest_route($this->nameSpace, 'post-popular', array(
+        register_rest_route($this->nameSpace, 'postpopular/(?P<category>[a-zA-Z0-9-_]+)', array(
             array(
                 'methods' => 'GET',
                 'callback' => array($this, 'getPostPopular')
@@ -59,10 +59,10 @@ class PostController extends WP_REST_Controller
                 'callback' => array($this, 'getPostDetail')
             ),
         ));
-        register_rest_route($this->nameSpace, 'news/(?P<post_slug>[a-zA-Z0-9-_]+)', array(
+        register_rest_route($this->nameSpace, 'chuyenmuc/(?P<post_slug>[a-zA-Z0-9-_]+)', array(
             array(
                 'methods' => 'GET',
-                'callback' => array($this, 'getNewsDetail')
+                'callback' => array($this, 'getPostDetail')
             ),
         ));
     }
@@ -70,7 +70,8 @@ class PostController extends WP_REST_Controller
     {
         $type = $request['type'];
         $file = $request['image'];
-        // header("Content-Disposition: attachment; filename=$file.$type");
+        $fileName = explode('_',$file)[2].'.'.$type;
+        header("Content-Disposition: attachment; filename=$fileName");
         header('Content-Type: image/' . $type);
         readfile(get_site_url() . "/file/$file." . $type);
     }
@@ -249,7 +250,7 @@ class PostController extends WP_REST_Controller
             'post_type' => POST_TYPE_FEED,
             'post_status' => array('publish'),
             'posts_per_page' => 3,
-            'orderby'        => 'rand',
+            'orderby'        => 'rand'
         );
 
 
@@ -298,6 +299,8 @@ class PostController extends WP_REST_Controller
             'post_type' => POST_TYPE,
             'post_status' => array('publish'),
             'posts_per_page' => 3,
+            'category_name' => $request['category'],
+
             'orderby'        => 'rand',
 
 
@@ -358,6 +361,67 @@ class PostController extends WP_REST_Controller
             return new WP_Error('no_posts', __('No post found'), array('status' => 404));
         }
         return new WP_REST_Response($results, 200);
+    }
+     public function getCategory($request)
+    {
+
+        $results = [];
+
+
+        $queryParams = $request->get_query_params();
+        //Pagination param
+        $page = 1;
+        $postPerPage = (int)get_option('posts_per_page');
+        if (isset($queryParams['page']) && $queryParams['page'] > 1) {
+            $page = (int)$queryParams['page'];
+        }
+        //Get Post of category
+        $args = array(
+            'post_type' => POST_TYPE,
+            'post_status' => array('publish'),
+            'order' => 'DESC',
+            'category_name' => $request['category'],
+            'posts_per_page' => $postPerPage,
+            'paged' => $page,
+        );
+        
+
+        //Get data for glossary
+        $posts = new WP_Query($args);
+        if ($posts->have_posts()) {
+
+            $results['code'] = 'success';
+            $key = 0;
+            
+            // Set default data null
+            while ($posts->have_posts()) {
+                $posts->the_post();
+                $getTitle =  get_the_title();
+
+
+                //Get content without caption
+                $results['data'][$key] = [
+                     'title' => $getTitle,
+                    'slug' => get_post_field('post_name', get_the_ID()),
+                    'content' => get_the_content(),
+                    'short_description' => get_post_meta(get_the_ID(), 'post_summary', true),
+                    'urlToImage' => get_post_meta(get_the_ID(), 'post_images_icon', true),
+                    'date' => get_the_date('Y/m/d'),
+                ];
+
+                $key++;
+            }
+            //Pagination data
+            $results['pagination'] = [
+                'current_page' => $page,
+                'total' => (int)$posts->found_posts,
+                'post_per_page' => $postPerPage,
+            ];
+            wp_reset_postdata();
+            return new WP_REST_Response($results, 200);
+        } else {
+            return new WP_Error('no_posts', __('No post found'), array('status' => 404));
+        }
     }
     public function getPostDetail($request)
     {
@@ -434,13 +498,13 @@ class PostController extends WP_REST_Controller
                 $imageLayer = imagecreatefrompng($image);
             }
 
-            $compressedImage = imagejpeg($imageLayer, 'file/compress_' . $imageName, $outputQuality);
+            $compressedImage = imagejpeg($imageLayer, 'file/' . $imageName, $outputQuality);
             
             
 
             if ($compressedImage) {
 
-                $result['newSize'] = $this->getSize('file/compress_' . $imageName);
+                $result['newSize'] = $this->getSize('file/' . $imageName);
                 $result['percent'] = '-' . number_format(100 - ((int)$result['newSize'] * 100 / (int)$result['oldSize']), 2, '.', '') . "%";
                 return $result;
             } else {
@@ -459,7 +523,14 @@ class PostController extends WP_REST_Controller
         } else {
             $protocol = 'http';
         }
-        return $protocol . "://" . $_SERVER['HTTP_HOST'] . "/" . "wp-json/convert/v1/get/$fileName?type=$type";
+        
+        $fileNameNew = explode('_',$fileName);
+        unset($fileNameNew[0]);
+        unset($fileNameNew[1]);
+        $result = implode('_', $fileNameNew);
+
+        
+        return $protocol . "://" . $_SERVER['HTTP_HOST'] . "/" . "wp-json/convert/v1/get/file?image=$fileName&type=$type&file_name=$result";
     }
     public function formatFile($request)
     {
@@ -503,7 +574,7 @@ class PostController extends WP_REST_Controller
                         imagedestroy($jpegImage);
                         imagedestroy($pngImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'png'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile($output, 'png'), 'data' => json_encode($result)));
                         break;
                     case 'gif':
                         $outputGif = str_replace([".jpg", ".jpeg"], "", $file['name']) . ".gif";
@@ -520,7 +591,7 @@ class PostController extends WP_REST_Controller
                         imagedestroy($gifImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $outputGif);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $outputGif, 'gif'), 'data' => json_encode($result)));                    // echo $gifFilePath;
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile($outputGif, 'gif'), 'data' => json_encode($result)));                    // echo $gifFilePath;
                         break;
                     case 'pdf':
                         require('fpdf/fpdf.php');
@@ -538,7 +609,7 @@ class PostController extends WP_REST_Controller
                         $pdf->Output($pdfFilePath, 'F');
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'pdf'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output, 'pdf'), 'data' => json_encode($result)));
                         break;
                     case 'jpg':
                         $outputJpg = $currentFloderDomain . str_replace([".png", ".jpeg"], "", $file['name']) . ".jpg";
@@ -562,15 +633,15 @@ class PostController extends WP_REST_Controller
                         $ico_lib = new PHP_ICO($tempFilePath);
                         $ico_lib->save_ico($tempIcoFilePath);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'ico'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output, 'ico'), 'data' => json_encode($result)));
                         break;
-                    case "tinyPNG":
+                    case "tinypng":
                         $sourceImg = $tempFilePath;
                         $fileName = $file['name'];
                         $arr = explode('.', $file['name']);
 
                         $d = $this->resizeImage($sourceImg, $fileName, 50);
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/compress_' . $fileName, $arr[count($arr) - 1]), 'data' => json_encode($d)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $fileName, $arr[count($arr) - 1]), 'data' => json_encode($d)));
                         break;
                     default:
                         echo json_encode(array("error" => "Failed to load file."));
@@ -588,7 +659,7 @@ class PostController extends WP_REST_Controller
                 $result['oldSize'] = "";
                 $result['newSize'] =  "";
                 $result['percent'] = "";
-                echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/'.str_replace('.mp4', '', $file['name']), 'zip'), 'data' => json_encode($result)));
+                echo json_encode(array("success" => true, "message" => $this->urlPathFile(str_replace('.mp4', '', $file['name']), 'zip'), 'data' => json_encode($result)));
 
             } else if (mime_content_type($tempFilePath) == "image/png") {
 
@@ -613,7 +684,7 @@ class PostController extends WP_REST_Controller
                         imagedestroy($jpegImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' .  $output, 'jpeg'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output, 'jpeg'), 'data' => json_encode($result)));
                         break;
                     case "jpg":
 
@@ -634,7 +705,7 @@ class PostController extends WP_REST_Controller
                         imagedestroy($jpegImage);
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'jpg'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output, 'jpg'), 'data' => json_encode($result)));
                         break;
                     case 'pdf':
                         require('fpdf/fpdf.php');
@@ -651,7 +722,7 @@ class PostController extends WP_REST_Controller
                         $pdf->Output($pdfFilePath, 'F');
                         $result = $this->getObjectSize($tempFilePath, 'file/' . $output);
 
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $output, 'pdf'), 'data' => json_encode($result)));
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile($output, 'pdf'), 'data' => json_encode($result)));
                         break;
                         // case "ico":
                         //     require('php-ico/class-php-ico.php');
@@ -664,12 +735,14 @@ class PostController extends WP_REST_Controller
 
                         //     echo json_encode(array("success" => true, "message" => $this->urlPathFile( $output,'ico'), 'data' => json_encode($result)));
                         //     break;
-                    case "tinyPNG":
+                    case "tinypng":
 
                         $sourceImg = $tempFilePath;
                         $fileName = $file['name'];
+                        
                         $d = $this->resizeImage($sourceImg, $fileName, 50);
-                        echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/compress_' . $fileName, 'png'), 'data' => json_encode($d)));
+                       
+                        echo json_encode(array("success" => true, "message" => $this->urlPathFile( $fileName, 'png'), 'data' => json_encode($d)));
                         break;
                     default:
                         echo json_encode(array("error" => "Failed to load file."));
@@ -684,7 +757,7 @@ class PostController extends WP_REST_Controller
 
                 $result['newSize'] =  $result['oldSize'];
                 $result['percent'] = "-0%";
-                echo json_encode(array("success" => true, "message" => $this->urlPathFile('file/' . $file['name'], $arr[count($arr) - 1]), 'data' => json_encode($result)));
+                echo json_encode(array("success" => true, "message" => $this->urlPathFile($file['name'], $arr[count($arr) - 1]), 'data' => json_encode($result)));
             }
         } catch (\Throwable $e) {
             echo '<pre>';
