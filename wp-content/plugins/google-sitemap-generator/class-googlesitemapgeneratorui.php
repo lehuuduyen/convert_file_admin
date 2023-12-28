@@ -236,8 +236,36 @@ class GoogleSitemapGeneratorUI {
 		 * @access public
 		 * @author Arne Brachhold
 		 */
+	public function sitemap(){
+		$url = get_option('DOMAIN_FE');
+		$path = get_option('PATH_DOMAIN_FE');
+		$pathSitemap = $path.'sitemap.xml';
+		$xml = `<?xml version="1.0" encoding="UTF-8"?>
+		<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+		  <url>
+			<loc>$url</loc>
+			<lastmod>2022-06-04</lastmod>
+		  </url>
+		</urlset>`;
+		$file_handler = fopen($pathSitemap, 'w');
+		if(!$file_handler)
+		//Print the error message
+		die("The file can't be open for writing<br />");
+		else
+		{
+			//Write the particular content in the file
+			fwrite($file_handler, $xml);
+			//Close the file
+			fclose($file_handler);
+	
+			echo file_get_contents($pathSitemap);
+		}
+		
+	}
 	public function html_show_options_page() {
 		$this->active_plugins();
+		$this->sitemap();
+		
 		global $wp_version;
 		$snl = false; // SNL.
 
